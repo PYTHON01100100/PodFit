@@ -162,6 +162,24 @@ GPUS = [
               "Accelerators. Apple claims up to 4.3x M3 Ultra's prefill compute, but decode "
               "stays memory-bound at this 1.2TB/s. FP16 is a third-party estimate, not an "
               "Apple-published figure."),
+    dict(id="m6-16", name="Apple M6 16GB unified", vendor="apple",
+         arch="Metal", vram_gb=12, bandwidth=170, fp16=12, fp8=0, fp4=0,
+         cores=dict(cpu=12, gpu=12, npu=32),
+         cc=CC_METAL, nvlink=0, tdp=22, form="Unified",
+         note="Unified memory; ~75% is addressable by the GPU by default. Apple's first "
+              "2nm chip, 12-core GPU with per-core Neural Accelerators and a dual 16-core "
+              "Neural Engine (32 cores total). Entry-tier memory and bandwidth - fine for "
+              "small/quantized models, not for anything the Max/Ultra tier is built for. "
+              "FP16 has no verified figure; treated conservatively."),
+    dict(id="m6-24", name="Apple M6 24GB unified", vendor="apple",
+         arch="Metal", vram_gb=18, bandwidth=170, fp16=12, fp8=0, fp4=0,
+         cores=dict(cpu=12, gpu=12, npu=32),
+         cc=CC_METAL, nvlink=0, tdp=22, form="Unified",
+         note="Unified memory; ~75% is addressable by the GPU by default. Apple's first "
+              "2nm chip, 12-core GPU with per-core Neural Accelerators and a dual 16-core "
+              "Neural Engine (32 cores total). Entry-tier memory and bandwidth - fine for "
+              "small/quantized models, not for anything the Max/Ultra tier is built for. "
+              "FP16 has no verified figure; treated conservatively."),
     dict(id="m6-32", name="Apple M6 32GB unified", vendor="apple",
          arch="Metal", vram_gb=24, bandwidth=170, fp16=12, fp8=0, fp4=0,
          cores=dict(cpu=12, gpu=12, npu=32),
