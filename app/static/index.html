@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>podfit — will this model run on my GPUs?</title>
+<link rel="stylesheet" href="/static/styles.css?v=nier2">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <rect x="3" y="3" width="18" height="18" rx="0"/><path d="M3 14h7l2-5 2 8 2-3h5"/></svg>
+    <span>PODFIT</span>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab on" data-view="size">Size a model</button>
+    <button class="tab" data-view="recommend">Best for my hardware</button>
+    <button class="tab" data-view="arch">Compatibility</button>
+  </nav>
+  <div class="topbar-right">
+    <button class="ghost sm" id="btn-refresh" title="Clear cached HuggingFace and benchmark responses">Refresh data</button>
+    <span class="pill hidden" id="hf-status">HF …</span>
+    <span class="pill hidden" id="aa-status">AA …</span>
+  </div>
+</header>
+
+<!-- ===================== setup bar ===================== -->
+<div class="setupbar" id="setupbar">
+  <div class="setup-summary" id="setup-summary"></div>
+  <button class="ghost" id="btn-setup">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+    <span id="btn-setup-label">Change setup</span>
+  </button>
+</div>
+
+<!-- ===================== setup panel ===================== -->
+<section class="setup-panel hidden" id="setup-panel">
+  <div class="setup-head">
+    <h2>Setup</h2>
+    <div class="row-gap">
+      <button class="ghost" id="setup-close">Done</button>
+    </div>
+  </div>
+
+  <div class="setup-grid">
+
+    <!-- MODEL -->
+    <div class="card">
+      <div class="sect-head">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="1.8">
+          <path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 12l9-5M12 12v10M12 12L3 7"/></svg>
+        <span class="sect">Model</span>
+      </div>
+      <div class="segmented src-toggle" id="src-toggle">
+        <button data-src="hf" class="on">HuggingFace</button>
+        <button data-src="aa">Artificial Analysis</button>
+      </div>
+      <div class="search-wrap">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.9">
+          <circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input id="q" type="search" placeholder="Search HuggingFace — qwen3, deepseek, gemma…" autocomplete="off">
+      </div>
+      <div class="filters">
+        <select id="pipeline"><option value="">All task types</option></select>
+        <select id="sort">
+          <option value="trendingScore">Trending</option>
+          <option value="downloads">Most downloaded</option>
+          <option value="likes">Most liked</option>
+          <option value="lastModified">Recently updated</option>
+          <option value="createdAt">Newest</option>
+        </select>
+      </div>
+      <div id="results" class="results"></div>
+    </div>
+
+    <!-- HARDWARE -->
+    <div class="card">
+      <div class="sect-head spread">
+        <div class="row-gap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="1.8">
+            <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/>
+            <path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></svg>
+          <span class="sect">Hardware</span>
+        </div>
+        <div class="rig-actions">
+          <select id="rig-select"><option value="">— saved rigs —</option></select>
+          <button class="ghost sm" id="btn-save-rig">Save</button>
+          <button class="ghost sm danger" id="btn-del-rig">Delete</button>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <label class="field span2"><span>GPU</span><select id="gpu"></select></label>
+        <label class="field"><span>How many</span><input id="gpus_per_node" type="number" min="1" max="256" value="1"></label>
+        <label class="field"><span>Nodes</span><input id="nodes" type="number" min="1" max="128" value="1"></label>
+      </div>
+      <div class="gpu-facts" id="gpu-facts"></div>
+      <p class="gpu-note" id="gpu-note"></p>
+
+      <details id="hw-adv">
+        <summary>Interconnect, host RAM, OS, driver, custom GPU</summary>
+        <div class="grid2">
+          <label class="field"><span>Interconnect</span>
+            <select id="interconnect">
+              <option value="nvlink">NVLink / NVSwitch</option>
+              <option value="pcie">PCIe only</option>
+              <option value="ib">InfiniBand / RoCE</option>
+              <option value="eth">Ethernet</option>
+            </select></label>
+          <label class="field"><span>Host RAM (GB)</span><input id="host_ram_gb" type="number" min="0" step="8" value="0" placeholder="optional"></label>
+          <label class="field"><span>Operating system</span>
+            <select id="os"><option value="linux">Linux</option><option value="windows">Windows</option><option value="macos">macOS</option></select></label>
+          <label class="field"><span>NVIDIA driver</span><input id="driver_version" type="text" placeholder="575.57.08"></label>
+          <label class="field span2"><span>VRAM override (GB) <small>usable, if different from spec</small></span>
+            <input id="vram_override_gb" type="number" min="0" step="1" placeholder="auto"></label>
+          <div class="span2 sub">Define a GPU that isn't listed</div>
+          <label class="field span2"><span>Name</span><input id="c_name" placeholder="My accelerator"></label>
+          <label class="field"><span>VRAM (GB)</span><input id="c_vram" type="number" step="1"></label>
+          <label class="field"><span>Bandwidth (GB/s)</span><input id="c_bw" type="number" step="1"></label>
+          <label class="field"><span>FP16 dense TFLOPS</span><input id="c_fp16" type="number" step="1"></label>
+          <label class="field"><span>FP8 dense TFLOPS</span><input id="c_fp8" type="number" step="1"></label>
+          <label class="field"><span>Compute capability</span><input id="c_cc" type="number" step="0.1" placeholder="8.9"></label>
+          <label class="field"><span>NVLink (GB/s, 0 = none)</span><input id="c_nvlink" type="number" step="1" value="0"></label>
+          <label class="field span2 checkbox"><input id="c_use" type="checkbox"><span>Use this custom GPU</span></label>
+        </div>
+      </details>
+    </div>
+
+    <!-- RUNTIME -->
+    <div class="card">
+      <div class="sect-head">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="1.8">
+          <path d="M13 2L3 14h8l-1 8 10-12h-8z"/></svg>
+        <span class="sect">Runtime</span>
+      </div>
+
+      <div class="grid2">
+        <label class="field"><span>Engine</span><select id="engine"></select></label>
+        <label class="field"><span>Weights</span><select id="weight_format"></select></label>
+        <label class="field span2 hidden" id="gguf-wrap"><span>GGUF file</span>
+          <select id="gguf_file"><option value="">— use the bits-per-weight estimate —</option></select></label>
+      </div>
+
+      <div class="field" style="margin-top:12px">
+        <span>Context length <b id="ctx-label">8,192</b></span>
+        <input id="context_len_range" type="range" min="10" max="22" step="1" value="13">
+        <div class="range-ends"><span>1k</span><span>4M</span></div>
+      </div>
+      <input id="context_len" type="number" min="64" step="1024" value="8192" class="hidden">
+
+      <div class="field" style="margin-top:10px">
+        <span>Concurrent streams <b id="conc-label">1</b></span>
+        <div class="segmented" id="conc-seg"></div>
+      </div>
+      <input id="concurrency" type="number" min="1" value="1" class="hidden">
+
+      <details id="rt-adv">
+        <summary>Advanced — parallelism, KV dtype, attention, utilization</summary>
+        <div class="grid2">
+          <label class="field"><span>Tensor parallel</span><select id="tp"></select></label>
+          <label class="field"><span>Pipeline parallel</span><select id="pp"></select></label>
+          <label class="field"><span>KV cache dtype</span><select id="kv_dtype"></select></label>
+          <label class="field"><span>Attention backend</span>
+            <select id="attention"><option value="auto">auto (engine picks)</option></select></label>
+          <label class="field" id="util-wrap"><span>gpu_memory_utilization</span>
+            <input id="gpu_mem_util" type="number" min="0.1" max="1" step="0.01" value="0.9"></label>
+          <label class="field" id="layers-wrap"><span>GPU layers (-ngl)</span>
+            <input id="gpu_layers" type="text" value="auto" placeholder="auto"></label>
+          <label class="field"><span>Images per request</span><input id="images_per_request" type="number" min="0" value="0"></label>
+          <label class="field span2 checkbox" id="eager-wrap">
+            <input id="enforce_eager" type="checkbox"><span>enforce_eager — skip CUDA graph capture, saves ~1–2 GiB</span></label>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== views ===================== -->
+<main>
+  <section id="view-size" class="view">
+    <div class="answer-layout">
+      <div class="col" id="answer-col">
+        <div class="card placeholder" id="answer-placeholder">
+          <p class="ph-title">Pick a model to size it</p>
+          <p class="ph-sub">podfit reads the real <code>config.json</code> and safetensors parameter
+            counts from HuggingFace, then computes weights, KV cache, activations and framework overhead
+            against the hardware you describe.</p>
+          <button class="primary" id="ph-open">Choose a model</button>
+          <p class="prompt-line">&gt; awaiting input<span class="nier-blink">_</span></p>
+        </div>
+      </div>
+      <div class="col" id="model-col"></div>
+    </div>
+  </section>
+
+  <section id="view-recommend" class="view hidden"></section>
+  <section id="view-arch" class="view hidden"></section>
+</main>
+
+<script src="/static/app.js?v=nier1"></script>
+</body>
+</html>

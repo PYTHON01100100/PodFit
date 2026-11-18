@@ -1,0 +1,386 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+           background: #0c0e13; color: #e6e9f0; -webkit-font-smoothing: antialiased; }
+    a { color: #5b8cff; text-decoration: none; }
+    a:hover { color: #8ab4ff; }
+    .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; background: #0c0e13; min-height: 980px;">
+
+  <!-- ============ app header ============ -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px;
+              padding: 0 24px; height: 56px; background: #141821; border-bottom: 1px solid #252b3a;">
+    <div style="display: flex; align-items: center; gap: 28px;">
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5b8cff" stroke-width="1.8">
+          <rect x="3" y="3" width="18" height="18" rx="4"/><path d="M3 14h7l2-5 2 8 2-3h5"/>
+        </svg>
+        <span style="font-size: 15px; font-weight: 650; letter-spacing: -0.01em;">modelfit</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 4px;">
+        <div style="padding: 6px 12px; border-radius: 7px; font-size: 13px; font-weight: 600;
+                    background: #1a1f2b; color: #e6e9f0; border: 1px solid #2c4a8f;">Size a model</div>
+        <div style="padding: 6px 12px; border-radius: 7px; font-size: 13px; color: #9aa3b8;">Best for my hardware</div>
+        <div style="padding: 6px 12px; border-radius: 7px; font-size: 13px; color: #9aa3b8;">Architecture support</div>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div class="mono" style="font-size: 11px; padding: 4px 10px; border-radius: 99px;
+                  background: #1a1f2b; border: 1px solid #252b3a; color: #9aa3b8;">HF · token set</div>
+      <div class="mono" style="font-size: 11px; padding: 4px 10px; border-radius: 99px;
+                  background: #1a1f2b; border: 1px solid #252b3a; color: #9aa3b8;">AA · on</div>
+    </div>
+  </div>
+
+  <!-- ============ setup bar: the whole configuration, collapsed to one line ============ -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 20px;
+              padding: 0 24px; height: 58px; background: #10141c; border-bottom: 1px solid #252b3a;">
+    <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+
+      <div style="display: flex; align-items: center; gap: 8px; padding: 6px 11px 6px 7px;
+                  background: #1a1f2b; border: 1px solid #2c4a8f; border-radius: 8px;">
+        <div style="width: 20px; height: 20px; border-radius: 5px; background: #e6e9f0; display: grid;
+                    place-items: center; font-size: 11px; font-weight: 700; color: #0c0e13;">OA</div>
+        <span class="mono" style="font-size: 12.5px; color: #e6e9f0;">openai/gpt-oss-120b</span>
+        <span style="font-size: 11px; color: #6b7488;">117B</span>
+      </div>
+
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3a4256" stroke-width="2">
+        <path d="M9 6l6 6-6 6"/></svg>
+
+      <div style="display: flex; align-items: center; gap: 8px; padding: 6px 11px;
+                  background: #1a1f2b; border: 1px solid #252b3a; border-radius: 8px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa3b8" stroke-width="1.8">
+          <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/>
+          <path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/>
+        </svg>
+        <span style="font-size: 12.5px; color: #e6e9f0;">8 × L20 48GB</span>
+      </div>
+
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3a4256" stroke-width="2">
+        <path d="M9 6l6 6-6 6"/></svg>
+
+      <div style="display: flex; align-items: center; gap: 8px; padding: 6px 11px;
+                  background: #1a1f2b; border: 1px solid #252b3a; border-radius: 8px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa3b8" stroke-width="1.8">
+          <path d="M13 2L3 14h8l-1 8 10-12h-8z"/></svg>
+        <span style="font-size: 12.5px; color: #e6e9f0;">vLLM · MXFP4</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px; padding: 6px 11px;
+                  background: #1a1f2b; border: 1px solid #252b3a; border-radius: 8px;">
+        <span style="font-size: 12.5px; color: #9aa3b8;">context</span>
+        <span class="mono" style="font-size: 12.5px; color: #e6e9f0;">131,072</span>
+        <span style="font-size: 12.5px; color: #6b7488;">× 1</span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; flex: none;">
+      <div style="display: flex; align-items: center; gap: 7px; padding: 7px 14px; border-radius: 7px;
+                  background: #1a1f2b; border: 1px solid #252b3a; font-size: 12.5px; color: #e6e9f0;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa3b8" stroke-width="1.8">
+          <path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
+        Change setup
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ body ============ -->
+  <div style="display: grid; grid-template-columns: minmax(0, 2.05fr) minmax(0, 1fr);
+              gap: 20px; padding: 20px 24px 28px;">
+
+    <!-- ---------- left: the answer ---------- -->
+    <div style="display: flex; flex-direction: column; gap: 14px; min-width: 0;">
+
+      <div style="background: #141821; border: 1px solid #252b3a; border-radius: 12px; overflow: hidden;">
+
+        <!-- verdict -->
+        <div style="display: flex; align-items: center; gap: 16px; padding: 20px 22px;
+                    background: linear-gradient(180deg, rgba(63,185,80,.07), rgba(63,185,80,0));">
+          <div style="width: 46px; height: 46px; border-radius: 12px; flex: none; display: grid;
+                      place-items: center; background: rgba(63,185,80,.14);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3fb950"
+                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <div style="min-width: 0; flex: 1;">
+            <div style="font-size: 19px; font-weight: 650; color: #3fb950; letter-spacing: -0.01em;">Fits comfortably</div>
+            <div style="font-size: 13px; color: #9aa3b8; margin-top: 3px;">
+              Tensor-parallel across all 8 GPUs · 27.2 GiB of weights per card · 10.0 GiB spare
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 99px;
+                      background: #1a1f2b; border: 1px solid #252b3a; flex: none;">
+            <span class="mono" style="font-size: 11.5px; color: #9aa3b8;">TP8 · PP1</span>
+            <span style="font-size: 10.5px; color: #6b7488;">auto</span>
+          </div>
+        </div>
+
+        <!-- headline numbers, promoted above the detail -->
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px;
+                    background: #252b3a; border-top: 1px solid #252b3a; border-bottom: 1px solid #252b3a;">
+          <div style="background: #141821; padding: 14px 18px;">
+            <div class="mono" style="font-size: 22px; letter-spacing: -0.02em; color: #e6e9f0;">2.37M</div>
+            <div style="font-size: 11px; color: #6b7488; margin-top: 4px;">max context, one stream</div>
+          </div>
+          <div style="background: #141821; padding: 14px 18px;">
+            <div class="mono" style="font-size: 22px; letter-spacing: -0.02em; color: #e6e9f0;">72</div>
+            <div style="font-size: 11px; color: #6b7488; margin-top: 4px;">streams at 131k context</div>
+          </div>
+          <div style="background: #141821; padding: 14px 18px;">
+            <div class="mono" style="font-size: 22px; letter-spacing: -0.02em; color: #e6e9f0;">457<span style="font-size: 13px; color: #9aa3b8;"> tok/s</span></div>
+            <div style="font-size: 11px; color: #6b7488; margin-top: 4px;">decode, single stream</div>
+          </div>
+          <div style="background: #141821; padding: 14px 18px;">
+            <div class="mono" style="font-size: 22px; letter-spacing: -0.02em; color: #e6e9f0;">0.9<span style="font-size: 13px; color: #9aa3b8;"> s</span></div>
+            <div style="font-size: 11px; color: #6b7488; margin-top: 4px;">time to first token</div>
+          </div>
+        </div>
+
+        <!-- memory -->
+        <div style="padding: 18px 22px 20px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 11px;">
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7488; font-weight: 600;">Memory per GPU</div>
+            <div style="font-size: 11.5px; color: #6b7488;">45.0 GiB card · 40.5 GiB budget at 90% utilization</div>
+          </div>
+
+          <div style="display: flex; height: 30px; border-radius: 8px; overflow: hidden;
+                      background: #0a0d14; border: 1px solid #252b3a;">
+            <div style="width: 60.4%; background: linear-gradient(180deg, #5b8cff, #4472d8);"></div>
+            <div style="width: 3.6%; background: linear-gradient(180deg, #8957e5, #6f42c1);"></div>
+            <div style="width: 0.7%; background: linear-gradient(180deg, #d29922, #a97d18);"></div>
+            <div style="width: 2.7%; background: linear-gradient(180deg, #db6d28, #b4531e);"></div>
+            <div style="width: 0.4%; background: linear-gradient(180deg, #3fb950, #2e8b3d);"></div>
+            <div style="width: 22.2%; background: repeating-linear-gradient(45deg, #161b26, #161b26 5px, #1b212e 5px, #1b212e 10px);"></div>
+            <div style="width: 10%; background: #0f131b;"></div>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 12px;">
+            <div style="display: flex; align-items: center; gap: 7px;">
+              <span style="width: 9px; height: 9px; border-radius: 2px; background: #5b8cff;"></span>
+              <span style="font-size: 12px; color: #9aa3b8;">Weights</span>
+              <span class="mono" style="font-size: 12px; color: #e6e9f0;">27.2</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 7px;">
+              <span style="width: 9px; height: 9px; border-radius: 2px; background: #8957e5;"></span>
+              <span style="font-size: 12px; color: #9aa3b8;">Framework</span>
+              <span class="mono" style="font-size: 12px; color: #e6e9f0;">1.60</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 7px;">
+              <span style="width: 9px; height: 9px; border-radius: 2px; background: #d29922;"></span>
+              <span style="font-size: 12px; color: #9aa3b8;">Activations</span>
+              <span class="mono" style="font-size: 12px; color: #e6e9f0;">0.30</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 7px;">
+              <span style="width: 9px; height: 9px; border-radius: 2px; background: #db6d28;"></span>
+              <span style="font-size: 12px; color: #9aa3b8;">CUDA graphs</span>
+              <span class="mono" style="font-size: 12px; color: #e6e9f0;">1.22</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 7px;">
+              <span style="width: 9px; height: 9px; border-radius: 2px; background: #3fb950;"></span>
+              <span style="font-size: 12px; color: #9aa3b8;">KV cache</span>
+              <span class="mono" style="font-size: 12px; color: #e6e9f0;">0.14</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 7px;">
+              <span style="width: 9px; height: 9px; border-radius: 2px; background: #1b212e;"></span>
+              <span style="font-size: 12px; color: #9aa3b8;">Free</span>
+              <span class="mono" style="font-size: 12px; color: #3fb950;">10.0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- what to watch: only blockers + warnings surfaced, notes folded -->
+      <div style="background: #141821; border: 1px solid #252b3a; border-radius: 12px; padding: 16px 18px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7488; font-weight: 600;">Worth knowing</div>
+          <div style="font-size: 11.5px; color: #6b7488;">2 warnings · 2 notes</div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; gap: 12px; padding: 12px 14px; border-radius: 9px;
+                      background: #1a1f2b; border: 1px solid #252b3a; border-left: 3px solid #d29922;">
+            <div style="min-width: 0;">
+              <div style="font-size: 13px; font-weight: 600; color: #e6e9f0;">MXFP4 weights are upcast to BF16 on this GPU</div>
+              <div style="font-size: 12.5px; color: #9aa3b8; margin-top: 4px; line-height: 1.55;">
+                Native MXFP4 kernels need Hopper or Blackwell (sm90+). On L20 (sm_89) vLLM dequantizes the
+                experts at load, so the model occupies its full BF16 size — already reflected above.
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; padding: 12px 14px; border-radius: 9px;
+                      background: #1a1f2b; border: 1px solid #252b3a; border-left: 3px solid #d29922;">
+            <div style="min-width: 0;">
+              <div style="font-size: 13px; font-weight: 600; color: #e6e9f0;">L20 has no NVLink</div>
+              <div style="font-size: 12.5px; color: #9aa3b8; margin-top: 4px; line-height: 1.55;">
+                TP=8 all-reduces cross PCIe. Expect noticeably sub-linear scaling past TP=4 on this card.
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between;
+                      padding: 11px 14px; border-radius: 9px; border: 1px dashed #252b3a;">
+            <div style="display: flex; align-items: center; gap: 9px;">
+              <span style="width: 7px; height: 7px; border-radius: 99px; background: #5b8cff;"></span>
+              <span style="font-size: 12.5px; color: #9aa3b8;">2 notes on sliding-window attention and MoE residency</span>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7488" stroke-width="2">
+              <path d="M6 9l6 6 6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- everything else, one row each, closed -->
+      <div style="background: #141821; border: 1px solid #252b3a; border-radius: 12px; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 14px; padding: 15px 18px; border-bottom: 1px solid #252b3a;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9aa3b8" stroke-width="1.8" style="flex: none;">
+            <path d="M13 2L3 14h8l-1 8 10-12h-8z"/></svg>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 13px; font-weight: 600;">Attention backend</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="width: 7px; height: 7px; border-radius: 99px; background: #3fb950;"></span>
+            <span style="font-size: 12.5px; color: #9aa3b8;">FlashAttention 2/3 selected</span>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7488" stroke-width="2" style="flex: none;">
+            <path d="M9 6l6 6-6 6"/></svg>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 14px; padding: 15px 18px; border-bottom: 1px solid #252b3a;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9aa3b8" stroke-width="1.8" style="flex: none;">
+            <path d="M4 17l6-6-6-6M12 19h8"/></svg>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 13px; font-weight: 600;">Launch command</div>
+          </div>
+          <span class="mono" style="font-size: 11.5px; color: #6b7488; white-space: nowrap; overflow: hidden;
+                      text-overflow: ellipsis; max-width: 300px;">vllm serve openai/gpt-oss-120b --tensor…</span>
+          <div style="display: flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 7px;
+                      background: #1a1f2b; border: 1px solid #252b3a; font-size: 12px; color: #e6e9f0; flex: none;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9aa3b8" stroke-width="1.8">
+              <rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+            Copy
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 14px; padding: 15px 18px;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9aa3b8" stroke-width="1.8" style="flex: none;">
+            <path d="M17 2l4 4-4 4M3 6h18M7 22l-4-4 4-4M21 18H3"/></svg>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 13px; font-weight: 600;">Compare against other GPUs</div>
+          </div>
+          <span style="font-size: 12.5px; color: #6b7488;">H100, H200, H20, A100, B200 and 4 more</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7488" stroke-width="2" style="flex: none;">
+            <path d="M9 6l6 6-6 6"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- right: what the model is ---------- -->
+    <div style="display: flex; flex-direction: column; gap: 14px; min-width: 0;">
+
+      <div style="background: #141821; border: 1px solid #252b3a; border-radius: 12px; padding: 16px 18px;">
+        <div style="display: flex; align-items: center; gap: 11px;">
+          <div style="width: 34px; height: 34px; border-radius: 9px; background: #e6e9f0; display: grid;
+                      place-items: center; font-size: 13px; font-weight: 700; color: #0c0e13; flex: none;">OA</div>
+          <div style="min-width: 0;">
+            <div class="mono" style="font-size: 13px; color: #e6e9f0; white-space: nowrap;
+                        overflow: hidden; text-overflow: ellipsis;">gpt-oss-120b</div>
+            <div style="font-size: 11.5px; color: #6b7488; margin-top: 2px;">openai · apache-2.0</div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 13px;">
+          <span style="font-size: 10.5px; padding: 2px 7px; border-radius: 4px; background: #1a1f2b;
+                       border: 1px solid #2c4a8f; color: #8ab4ff;">GPT-OSS</span>
+          <span style="font-size: 10.5px; padding: 2px 7px; border-radius: 4px; background: #1a1f2b;
+                       border: 1px solid #5c4813; color: #e3b341;">MoE</span>
+          <span style="font-size: 10.5px; padding: 2px 7px; border-radius: 4px; background: #1a1f2b;
+                       border: 1px solid #5c4813; color: #e3b341;">MXFP4</span>
+          <span style="font-size: 10.5px; padding: 2px 7px; border-radius: 4px; background: #1a1f2b;
+                       border: 1px solid #252b3a; color: #9aa3b8;">sliding window</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin-top: 15px;
+                    background: #252b3a; border: 1px solid #252b3a; border-radius: 9px; overflow: hidden;">
+          <div style="background: #1a1f2b; padding: 10px 12px;">
+            <div class="mono" style="font-size: 14px; color: #e6e9f0;">117B</div>
+            <div style="font-size: 10.5px; color: #6b7488; margin-top: 2px;">parameters</div>
+          </div>
+          <div style="background: #1a1f2b; padding: 10px 12px;">
+            <div class="mono" style="font-size: 14px; color: #e6e9f0;">5.8B</div>
+            <div style="font-size: 10.5px; color: #6b7488; margin-top: 2px;">active per token</div>
+          </div>
+          <div style="background: #1a1f2b; padding: 10px 12px;">
+            <div class="mono" style="font-size: 14px; color: #e6e9f0;">36</div>
+            <div style="font-size: 10.5px; color: #6b7488; margin-top: 2px;">layers</div>
+          </div>
+          <div style="background: #1a1f2b; padding: 10px 12px;">
+            <div class="mono" style="font-size: 14px; color: #e6e9f0;">64 / 8</div>
+            <div style="font-size: 10.5px; color: #6b7488; margin-top: 2px;">attn / KV heads</div>
+          </div>
+          <div style="background: #1a1f2b; padding: 10px 12px;">
+            <div class="mono" style="font-size: 14px; color: #e6e9f0;">131,072</div>
+            <div style="font-size: 10.5px; color: #6b7488; margin-top: 2px;">native context</div>
+          </div>
+          <div style="background: #1a1f2b; padding: 10px 12px;">
+            <div class="mono" style="font-size: 14px; color: #e6e9f0;">182 GB</div>
+            <div style="font-size: 10.5px; color: #6b7488; margin-top: 2px;">repo size</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid #252b3a;">
+          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em;
+                      color: #6b7488; font-weight: 600; margin-bottom: 10px;">How capable is it</div>
+          <div style="display: flex; align-items: flex-end; gap: 10px;">
+            <div class="mono" style="font-size: 26px; line-height: 1; color: #5b8cff;">15.6</div>
+            <div style="font-size: 11.5px; color: #6b7488; padding-bottom: 3px;">/ 100</div>
+          </div>
+          <div style="height: 5px; border-radius: 99px; background: #0a0d14; margin-top: 9px; overflow: hidden;">
+            <div style="width: 15.6%; height: 100%; background: linear-gradient(90deg, #5b8cff, #8957e5);"></div>
+          </div>
+          <div style="font-size: 11.5px; color: #9aa3b8; margin-top: 8px; line-height: 1.5;">
+            Artificial Analysis Intelligence Index · matched
+            <span style="color: #e6e9f0;">gpt-oss-120b (high)</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: #141821; border: 1px solid #252b3a; border-radius: 12px; padding: 16px 18px;">
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em;
+                    color: #6b7488; font-weight: 600; margin-bottom: 12px;">Runs on</div>
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 12.5px; color: #e6e9f0;">vLLM</span>
+            <span style="display: flex; align-items: center; gap: 7px; font-size: 12px; color: #3fb950;">
+              <span style="width: 7px; height: 7px; border-radius: 99px; background: #3fb950;"></span>supported</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 12.5px; color: #e6e9f0;">SGLang</span>
+            <span style="display: flex; align-items: center; gap: 7px; font-size: 12px; color: #3fb950;">
+              <span style="width: 7px; height: 7px; border-radius: 99px; background: #3fb950;"></span>supported</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="font-size: 12.5px; color: #e6e9f0;">llama.cpp</span>
+            <span style="display: flex; align-items: center; gap: 7px; font-size: 12px; color: #3fb950;">
+              <span style="width: 7px; height: 7px; border-radius: 99px; background: #3fb950;"></span>supported</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

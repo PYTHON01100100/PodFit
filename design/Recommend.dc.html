@@ -1,0 +1,272 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+           background: #0c0e13; color: #e6e9f0; -webkit-font-smoothing: antialiased; }
+    a { color: #5b8cff; text-decoration: none; }
+    a:hover { color: #8ab4ff; }
+    .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+    .th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em;
+          color: #6b7488; font-weight: 600; }
+    .avatar { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center;
+              font-size: 10px; font-weight: 700; color: #fff; flex: none; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; background: #0c0e13; min-height: 980px;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 24px;
+              padding: 0 24px; height: 56px; background: #141821; border-bottom: 1px solid #252b3a;">
+    <div style="display: flex; align-items: center; gap: 28px;">
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5b8cff" stroke-width="1.8">
+          <rect x="3" y="3" width="18" height="18" rx="4"/><path d="M3 14h7l2-5 2 8 2-3h5"/></svg>
+        <span style="font-size: 15px; font-weight: 650; letter-spacing: -0.01em;">modelfit</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 4px;">
+        <div style="padding: 6px 12px; border-radius: 7px; font-size: 13px; color: #9aa3b8;">Size a model</div>
+        <div style="padding: 6px 12px; border-radius: 7px; font-size: 13px; font-weight: 600;
+                    background: #1a1f2b; color: #e6e9f0; border: 1px solid #2c4a8f;">Best for my hardware</div>
+        <div style="padding: 6px 12px; border-radius: 7px; font-size: 13px; color: #9aa3b8;">Architecture support</div>
+      </div>
+    </div>
+    <div class="mono" style="font-size: 11px; padding: 4px 10px; border-radius: 99px;
+                background: #1a1f2b; border: 1px solid #252b3a; color: #9aa3b8;">AA · on</div>
+  </div>
+
+  <div style="padding: 24px 24px 28px;">
+
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 18px;">
+      <div>
+        <div style="font-size: 20px; font-weight: 650; letter-spacing: -0.015em;">Best models for 8 × L20</div>
+        <div style="font-size: 13px; color: #9aa3b8; margin-top: 5px;">
+          Sized against your hardware at 32k context, ranked by benchmark score. 24 models scanned ·
+          8 have a published score.
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; flex: none;">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 13px; border-radius: 7px;
+                    background: #1a1f2b; border: 1px solid #252b3a; font-size: 12.5px;">
+          <span style="color: #9aa3b8;">Task</span><span>Text generation</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7488" stroke-width="2">
+            <path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 13px; border-radius: 7px;
+                    background: #1a1f2b; border: 1px solid #252b3a; font-size: 12.5px;">
+          <span style="color: #9aa3b8;">From</span><span>Trending</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7488" stroke-width="2">
+            <path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div style="padding: 8px 15px; border-radius: 7px; background: #5b8cff; color: #fff;
+                    font-size: 12.5px; font-weight: 600;">Rescan</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; padding: 11px 14px; border-radius: 9px;
+                background: #1a1f2b; border: 1px solid #252b3a; margin-bottom: 16px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6b7488" stroke-width="1.9" style="flex: none;">
+        <circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg>
+      <span style="font-size: 12.5px; color: #9aa3b8;">
+        Scores come from Artificial Analysis. Models with no published score are listed below the ranked
+        ones rather than guessed at.</span>
+    </div>
+
+    <div style="background: #141821; border: 1px solid #252b3a; border-radius: 12px; overflow: hidden;">
+
+      <div style="display: grid; grid-template-columns: 168px minmax(0,1fr) 108px 116px 92px 132px 108px;
+                  gap: 16px; padding: 11px 18px; background: #10141c; border-bottom: 1px solid #252b3a;">
+        <div class="th">Score</div><div class="th">Model</div><div class="th">Size</div>
+        <div class="th">Fits</div><div class="th">TP × PP</div><div class="th">Max context</div><div class="th">Decode</div>
+      </div>
+
+      <!-- 1 -->
+      <div style="display: grid; grid-template-columns: 168px minmax(0,1fr) 108px 116px 92px 132px 108px;
+                  gap: 16px; padding: 14px 18px; align-items: center; border-bottom: 1px solid #252b3a;
+                  background: #161b26;">
+        <div>
+          <div class="mono" style="font-size: 16px; color: #e6e9f0;">15.6</div>
+          <div style="height: 4px; border-radius: 99px; background: #0a0d14; margin-top: 6px; overflow: hidden;">
+            <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #5b8cff, #8957e5);"></div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+          <div class="avatar" style="background: #e6e9f0; color: #0c0e13;">OA</div>
+          <div style="min-width: 0;">
+            <div class="mono" style="font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">openai/gpt-oss-120b</div>
+            <div style="font-size: 11px; color: #6b7488; margin-top: 2px;">GPT-OSS · MoE</div>
+          </div>
+        </div>
+        <div><div class="mono" style="font-size: 12.5px;">117B</div>
+          <div style="font-size: 10.5px; color: #6b7488; margin-top: 2px;">5.8B active</div></div>
+        <div><span style="font-size: 10.5px; padding: 3px 9px; border-radius: 99px; font-weight: 600;
+                    background: rgba(63,185,80,.15); color: #3fb950;">fits</span></div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">8 × 1</div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">2,372,578</div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">457 t/s</div>
+      </div>
+
+      <!-- 2 -->
+      <div style="display: grid; grid-template-columns: 168px minmax(0,1fr) 108px 116px 92px 132px 108px;
+                  gap: 16px; padding: 14px 18px; align-items: center; border-bottom: 1px solid #252b3a;">
+        <div>
+          <div class="mono" style="font-size: 16px; color: #e6e9f0;">8.6</div>
+          <div style="height: 4px; border-radius: 99px; background: #0a0d14; margin-top: 6px; overflow: hidden;">
+            <div style="width: 55%; height: 100%; background: linear-gradient(90deg, #5b8cff, #8957e5);"></div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+          <div class="avatar" style="background: #6d4aff;">QW</div>
+          <div style="min-width: 0;">
+            <div class="mono" style="font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Qwen/Qwen3-30B-A3B</div>
+            <div style="font-size: 11px; color: #6b7488; margin-top: 2px;">Qwen3 MoE</div>
+          </div>
+        </div>
+        <div><div class="mono" style="font-size: 12.5px;">30.5B</div>
+          <div style="font-size: 10.5px; color: #6b7488; margin-top: 2px;">3.3B active</div></div>
+        <div><span style="font-size: 10.5px; padding: 3px 9px; border-radius: 99px; font-weight: 600;
+                    background: rgba(63,185,80,.15); color: #3fb950;">fits</span></div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">2 × 1</div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">205,601</div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">166 t/s</div>
+      </div>
+
+      <!-- 3 -->
+      <div style="display: grid; grid-template-columns: 168px minmax(0,1fr) 108px 116px 92px 132px 108px;
+                  gap: 16px; padding: 14px 18px; align-items: center; border-bottom: 1px solid #252b3a;">
+        <div>
+          <div class="mono" style="font-size: 16px; color: #e6e9f0;">5.7</div>
+          <div style="height: 4px; border-radius: 99px; background: #0a0d14; margin-top: 6px; overflow: hidden;">
+            <div style="width: 37%; height: 100%; background: linear-gradient(90deg, #5b8cff, #8957e5);"></div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+          <div class="avatar" style="background: #6d4aff;">QW</div>
+          <div style="min-width: 0;">
+            <div class="mono" style="font-size: 12.5px;">Qwen/Qwen3-32B</div>
+            <div style="font-size: 11px; color: #6b7488; margin-top: 2px;">Qwen3 dense</div>
+          </div>
+        </div>
+        <div><div class="mono" style="font-size: 12.5px;">32.8B</div></div>
+        <div><span style="font-size: 10.5px; padding: 3px 9px; border-radius: 99px; font-weight: 600;
+                    background: rgba(63,185,80,.15); color: #3fb950;">fits</span></div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">8 × 1</div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">989,997</div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">79 t/s</div>
+      </div>
+
+      <!-- 4 tight -->
+      <div style="display: grid; grid-template-columns: 168px minmax(0,1fr) 108px 116px 92px 132px 108px;
+                  gap: 16px; padding: 14px 18px; align-items: center; border-bottom: 1px solid #252b3a;">
+        <div>
+          <div class="mono" style="font-size: 16px; color: #e6e9f0;">3.7</div>
+          <div style="height: 4px; border-radius: 99px; background: #0a0d14; margin-top: 6px; overflow: hidden;">
+            <div style="width: 24%; height: 100%; background: linear-gradient(90deg, #5b8cff, #8957e5);"></div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+          <div class="avatar" style="background: #0668e1;">ML</div>
+          <div style="min-width: 0;">
+            <div class="mono" style="font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">meta-llama/Llama-3.3-70B-Instruct</div>
+            <div style="font-size: 11px; color: #6b7488; margin-top: 2px;">Llama · gated</div>
+          </div>
+        </div>
+        <div><div class="mono" style="font-size: 12.5px;">70.6B</div></div>
+        <div><span style="font-size: 10.5px; padding: 3px 9px; border-radius: 99px; font-weight: 600;
+                    background: rgba(227,160,8,.15); color: #e3a008;">tight</span></div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">8 × 1</div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">549,198</div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">33 t/s</div>
+      </div>
+
+      <!-- 5 -->
+      <div style="display: grid; grid-template-columns: 168px minmax(0,1fr) 108px 116px 92px 132px 108px;
+                  gap: 16px; padding: 14px 18px; align-items: center; border-bottom: 1px solid #252b3a;">
+        <div>
+          <div class="mono" style="font-size: 16px; color: #e6e9f0;">2.8</div>
+          <div style="height: 4px; border-radius: 99px; background: #0a0d14; margin-top: 6px; overflow: hidden;">
+            <div style="width: 18%; height: 100%; background: linear-gradient(90deg, #5b8cff, #8957e5);"></div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+          <div class="avatar" style="background: #6d4aff;">QW</div>
+          <div style="min-width: 0;">
+            <div class="mono" style="font-size: 12.5px;">Qwen/Qwen3-8B</div>
+            <div style="font-size: 11px; color: #6b7488; margin-top: 2px;">Qwen3 dense</div>
+          </div>
+        </div>
+        <div><div class="mono" style="font-size: 12.5px;">8.2B</div></div>
+        <div><span style="font-size: 10.5px; padding: 3px 9px; border-radius: 99px; font-weight: 600;
+                    background: rgba(63,185,80,.15); color: #3fb950;">fits</span></div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">1 × 1</div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">166,145</div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">37 t/s</div>
+      </div>
+
+      <!-- 6 gemma -->
+      <div style="display: grid; grid-template-columns: 168px minmax(0,1fr) 108px 116px 92px 132px 108px;
+                  gap: 16px; padding: 14px 18px; align-items: center; border-bottom: 1px solid #252b3a;">
+        <div>
+          <div class="mono" style="font-size: 16px; color: #e6e9f0;">2.0</div>
+          <div style="height: 4px; border-radius: 99px; background: #0a0d14; margin-top: 6px; overflow: hidden;">
+            <div style="width: 13%; height: 100%; background: linear-gradient(90deg, #5b8cff, #8957e5);"></div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+          <div class="avatar" style="background: #f9ab00; color: #0c0e13;">GO</div>
+          <div style="min-width: 0;">
+            <div class="mono" style="font-size: 12.5px;">google/gemma-3-27b-it</div>
+            <div style="font-size: 11px; color: #6b7488; margin-top: 2px;">Gemma 3 · sliding window</div>
+          </div>
+        </div>
+        <div><div class="mono" style="font-size: 12.5px;">27.4B</div></div>
+        <div><span style="font-size: 10.5px; padding: 3px 9px; border-radius: 99px; font-weight: 600;
+                    background: rgba(63,185,80,.15); color: #3fb950;">fits</span></div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">2 × 1</div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">299,140</div>
+        <div class="mono" style="font-size: 12.5px; color: #9aa3b8;">23 t/s</div>
+      </div>
+
+      <!-- separator: doesn't fit -->
+      <div style="padding: 10px 18px; background: #10141c; border-bottom: 1px solid #252b3a;
+                  display: flex; align-items: center; gap: 9px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7488" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12"/></svg>
+        <span class="th">Stronger, but needs more hardware</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 168px minmax(0,1fr) 108px 116px 92px 132px 108px;
+                  gap: 16px; padding: 14px 18px; align-items: center; opacity: 0.62;">
+        <div>
+          <div class="mono" style="font-size: 16px; color: #e6e9f0;">25.3</div>
+          <div style="height: 4px; border-radius: 99px; background: #0a0d14; margin-top: 6px; overflow: hidden;">
+            <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #5b8cff, #8957e5);"></div></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+          <div class="avatar" style="background: #3d6bd6;">DS</div>
+          <div style="min-width: 0;">
+            <div class="mono" style="font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">deepseek-ai/DeepSeek-V3.2-Exp</div>
+            <div style="font-size: 11px; color: #f85149; margin-top: 2px;">weights alone exceed the per-GPU budget</div>
+          </div>
+        </div>
+        <div><div class="mono" style="font-size: 12.5px;">685B</div>
+          <div style="font-size: 10.5px; color: #6b7488; margin-top: 2px;">51.9B active</div></div>
+        <div><span style="font-size: 10.5px; padding: 3px 9px; border-radius: 99px; font-weight: 600;
+                    background: rgba(248,81,73,.15); color: #f85149;">no</span></div>
+        <div class="mono" style="font-size: 12.5px; color: #6b7488;">8 × 1</div>
+        <div class="mono" style="font-size: 12.5px; color: #6b7488;">—</div>
+        <div class="mono" style="font-size: 12.5px; color: #6b7488;">—</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 9px; margin-top: 14px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7488" stroke-width="1.9">
+        <path d="M12 8v8M8 12h8"/><circle cx="12" cy="12" r="9"/></svg>
+      <span style="font-size: 12px; color: #6b7488;">
+        16 more models were scanned and have no published benchmark score</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

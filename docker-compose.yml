@@ -1,0 +1,21 @@
+services:
+  podfit:
+    build: .
+    image: podfit:1.0
+    container_name: podfit
+    restart: unless-stopped
+    # Bound to loopback only; host nginx terminates TLS and proxies here.
+    ports:
+      - "127.0.0.1:8510:8510"
+    volumes:
+      - ./data:/data
+    environment:
+      # Optional: set HF_TOKEN in .env to resolve gated repos (Llama, some Mistral).
+      # Optional: HF_TOKEN for gated repos, AA_API_KEY for Artificial Analysis
+      # intelligence scores. Both live in .env and are read at startup.
+      HF_TOKEN: "${HF_TOKEN:-}"
+      AA_API_KEY: "${AA_API_KEY:-}"
+      TZ: "${TZ:-Asia/Riyadh}"
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}

@@ -1,0 +1,19 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",      "x": 0,    "y": 0,    "w": 1440, "h": 930, "title": "1 · The answer" },
+    { "file": "Setup.dc.html",     "x": 1560, "y": 0,    "w": 1440, "h": 930, "title": "2 · Change setup" },
+    { "file": "NoFit.dc.html",     "x": 0,    "y": 1120, "w": 1440, "h": 950, "title": "3 · When it doesn't fit" },
+    { "file": "Recommend.dc.html", "x": 1560, "y": 1120, "w": 1440, "h": 950, "title": "4 · Best for my hardware" }
+  ],
+  "annotations": [
+    { "id": "note-setup", "x": 0, "y": -150, "w": 620,
+      "text": "The whole configuration collapses to one line.\nModel · hardware · runtime · context read as a sentence you can scan in a second, and open only when you want to change something." },
+    { "id": "note-answer", "x": 700, "y": -150, "w": 620,
+      "text": "The verdict is the page, not a section of it.\nHeadline numbers sit directly under it; the memory breakdown, findings, attention backend, command and comparison are demoted below or folded away." },
+    { "id": "note-fold", "x": 0, "y": 980, "w": 620,
+      "text": "Findings are triaged, not listed.\nBlockers and warnings show in full; informational notes collapse to a single counted row." },
+    { "id": "note-fix", "x": 700, "y": 980, "w": 620,
+      "text": "PROPOSED — not in the app today.\n\"What would make it fit\" turns a dead end into next steps. The three options here are real results from your own cluster; say the word and I'll cut it or build it." }
+  ],
+  "launch": { "view": "canvas" }
+}
