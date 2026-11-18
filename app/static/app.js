@@ -1216,6 +1216,16 @@ function renderDocsView() {
         <a href="#docs-apple" class="sub">Apple Silicon</a>
         <a href="#docs-nvidia" class="sub">NVIDIA &amp; L20</a>
         <a href="#docs-cloud" class="sub">Cloud landscape</a>
+        <a href="#docs-providers">Cloud providers</a>
+        <a href="#docs-aws" class="sub">AWS</a>
+        <a href="#docs-azure" class="sub">Azure</a>
+        <a href="#docs-gcp" class="sub">GCP</a>
+        <a href="#docs-alibaba" class="sub">Alibaba Cloud</a>
+        <a href="#docs-engines">LLM engines</a>
+        <a href="#docs-vllm" class="sub">vLLM</a>
+        <a href="#docs-sglang" class="sub">SGLang</a>
+        <a href="#docs-llamacpp" class="sub">llama.cpp</a>
+        <a href="#docs-ollama" class="sub">Ollama</a>
         <a href="#docs-contributing">Contributing</a>
       </nav>
       <article class="docs-content">
@@ -1237,6 +1247,7 @@ function renderDocsView() {
             <a class="ghost sm" href="https://x.com/PYTHON01100100" target="_blank" rel="noopener">X ↗</a>
             <a class="ghost sm" href="https://github.com/PYTHON01100100" target="_blank" rel="noopener">GitHub ↗</a>
             <a class="ghost sm" href="https://github.com/PYTHON01100100/PodFit" target="_blank" rel="noopener">Project repo ↗</a>
+            <a class="ghost sm" href="https://buymeacoffee.com/AbdulrahmanAlmyman" target="_blank" rel="noopener">Buy me a coffee ↗</a>
           </div>
         </section>
 
@@ -1340,6 +1351,100 @@ function renderDocsView() {
               It's also the only path to an Apple Silicon cluster — no cloud provider rents Mac
               Studios by the hour at any real scale.</li>
           </ul>
+        </section>
+
+        <section id="docs-providers">
+          <h3>Cloud providers</h3>
+          <p>Instance-family names for the four clouds most people size against, so you know
+            what to search for once podfit tells you what fits. Naming and availability vary by
+            region — check each provider's own docs before committing to one.</p>
+        </section>
+
+        <section id="docs-aws">
+          <h4>AWS</h4>
+          <p><b>P5</b> (H100 SXM, 8 per node), <b>P5e</b>/<b>P5en</b> (H200 SXM), and the newer
+            <b>P6-B200</b> (Blackwell) cover the hyperscaler's current NVIDIA lineup, plus
+            Capacity Blocks for reserving GPU time in advance rather than competing for on-demand
+            capacity. AWS also has its own silicon (Trainium/Inferentia) outside podfit's
+            NVIDIA/AMD/Apple catalog — relevant if you're training rather than serving with
+            vLLM/SGLang/llama.cpp. Worth it when you need the rest of the AWS ecosystem (IAM,
+            VPC, S3, SageMaker) alongside the GPU.</p>
+        </section>
+
+        <section id="docs-azure">
+          <h4>Azure</h4>
+          <p><b>ND H100 v5</b> and <b>ND H200 v5</b> cover Hopper; Blackwell ships as
+            <b>ND GB200 v6</b> — a Grace-CPU-plus-Blackwell configuration with four B200-class
+            GPUs per VM rather than a standalone B200 instance, which matters when you're
+            estimating per-GPU cost. Microsoft's tight partnership with OpenAI tends to put new
+            NVIDIA silicon on Azure early and in volume.</p>
+        </section>
+
+        <section id="docs-gcp">
+          <h4>GCP</h4>
+          <p><b>A3 Mega</b> (<code>a3-megagpu-8g</code>, H100), <b>A3 Ultra</b>
+            (<code>a3-ultragpu-8g</code>, H200), and <b>A4</b> (<code>a4-highgpu-8g</code>, B200)
+            are the current NVIDIA families. GCP also offers its own TPU silicon as an
+            alternative to GPU-based serving entirely — outside podfit's scope, since the app
+            sizes against the real GPUs vLLM/SGLang/llama.cpp actually run on, not custom
+            accelerators with their own software stack.</p>
+        </section>
+
+        <section id="docs-alibaba">
+          <h4>Alibaba Cloud</h4>
+          <p>The most directly relevant provider to podfit's catalog: <b>GN8is</b>/<b>GN8v</b>
+            instances run the <b>L20</b> in 1/2/4/8-GPU configurations — the exact card podfit
+            models with its real, cut-down numbers (see the NVIDIA &amp; L20 section above).
+            <b>GN7i</b> runs the A10 (inference-optimized). A separate higher-end line
+            (<code>gx8sf</code>/"L20X") offers 141 GB with NVLink and 3.2 Tbps RDMA for
+            large-scale training and inference. Alibaba Cloud, alongside Tencent and Huawei Cloud,
+            is also the primary place you'll actually find the other export-compliant chips in
+            podfit's catalog — H20 and H800 — since those SKUs exist specifically for this market.
+            Some instance families are region-restricted (overseas-only, or mainland-only) —
+            check availability for your account before planning around one.</p>
+        </section>
+
+        <section id="docs-engines">
+          <h3>LLM engines</h3>
+          <p>The four engines podfit can size against, with exactly the OS and weight-format
+            support it models them with (<code>app/catalog.py</code>'s <code>ENGINES</code>) —
+            not a generic engine comparison, but what actually constrains the dropdown.</p>
+        </section>
+
+        <section id="docs-vllm">
+          <h4>vLLM</h4>
+          <p>Linux only. Loads fp16/bf16/fp32/fp8/int8/AWQ/GPTQ (4 &amp; 8-bit)/bitsandbytes
+            NF4/MXFP4/NVFP4. podfit's default "server" engine: PagedAttention, continuous
+            batching, tensor/pipeline parallelism over NCCL. This is the engine podfit's
+            server-style memory model (<code>gpu_memory_utilization</code> budget, CUDA graph
+            reservation, KV cache sizing) is built around.</p>
+        </section>
+
+        <section id="docs-sglang">
+          <h4>SGLang</h4>
+          <p>Linux only. Loads fp16/bf16/fp8/int8/AWQ/GPTQ/MXFP4/NVFP4 — no fp32, no
+            bitsandbytes, unlike vLLM. RadixAttention gives it an edge on prefix-heavy workloads
+            (shared system prompts, few-shot examples). podfit sizes it with the same
+            server-style memory model as vLLM.</p>
+        </section>
+
+        <section id="docs-llamacpp">
+          <h4>llama.cpp</h4>
+          <p>Linux, Windows, and macOS. Loads GGUF quantizations (Q8_0 down to Q2_K, IQ3/IQ4
+            variants) plus fp16. The only engine with partial GPU offload (some layers on GPU,
+            the rest on CPU/system RAM) and the only one Apple Silicon can use, via its Metal
+            backend. podfit models it with a layer-split memory calculation, not tensor-parallel
+            — see the Apple Silicon section above for what that means for multi-GPU/multi-machine
+            setups.</p>
+        </section>
+
+        <section id="docs-ollama">
+          <h4>Ollama</h4>
+          <p>Linux, Windows, and macOS. GGUF-only — no fp16 option, unlike llama.cpp itself.
+            It's a llama.cpp wrapper with a friendlier CLI/API and model-pull workflow; podfit
+            sizes it identically to llama.cpp under the hood. MLX is a real alternative for
+            Apple Silicon clustering (see Apple Silicon above) but isn't a selectable engine in
+            podfit yet — there's no MLX entry in <code>ENGINES</code>.</p>
         </section>
 
         <section id="docs-contributing">
