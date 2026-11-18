@@ -59,7 +59,9 @@ function applyLanguage() {
   root.lang = isAr() ? 'ar' : 'en';
   root.dir = isAr() ? 'rtl' : 'ltr';
   document.body.classList.toggle('lang-ar', isAr());
-  document.title = isAr() ? 'بودفِت — هل يعمل هذا النموذج على عتادي؟' : 'podfit — will this model run on my GPUs?';
+  document.title = isAr() ? 'مُلاءِم النماذج — هل يعمل هذا النموذج على عتادي؟' : 'podfit — will this model run on my GPUs?';
+  const brand = $('.brand span');
+  if (brand) brand.textContent = isAr() ? 'مُلاءِم النماذج' : 'PODFIT';
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const nodes = [];
   while (walker.nextNode()) nodes.push(walker.currentNode);
@@ -86,7 +88,7 @@ function applyLanguage() {
   const staticCopy = {
     '#answer-placeholder .ph-sub': [
       'podfit reads the real config.json and safetensors parameter counts from HuggingFace, then computes weights, KV cache, activations and framework overhead against the hardware you describe.',
-      'يقرأ podfit ملف config.json الحقيقي وعدد معاملات safetensors من HuggingFace، ثم يحسب الأوزان وذاكرة KV والأنشطة وزيادة الإطار مقابل العتاد الذي تصفه.'
+      'يقرأ مُلاءِم النماذج ملف config.json الحقيقي وعدد معاملات safetensors من HuggingFace، ثم يحسب الأوزان وذاكرة KV والأنشطة وزيادة الإطار مقابل العتاد الذي تصفه.'
     ],
     '#answer-placeholder .prompt-line': ['> awaiting input_', '> بانتظار الإدخال_'],
     '#keys-panel .setup-grid > .card:nth-child(1) .gpu-note': [
@@ -1331,8 +1333,8 @@ function renderDocsArabicView() {
       <article class="docs-content">
         <section id="docs-about">
           <h3>عن المشروع</h3>
-          <p>يجيب <b>podfit</b> عن سؤال واحد: <b>هل يعمل هذا النموذج على عتادي، وبأي أداء؟</b>
-          اختر أي نموذج من HuggingFace، صف وحدات GPU لديك، اختر المحرك وكمّ الأوزان، ثم يحسب podfit
+          <p>يجيب <b>مُلاءِم النماذج</b> عن سؤال واحد: <b>هل يعمل هذا النموذج على عتادي، وبأي أداء؟</b>
+          اختر أي نموذج من HuggingFace، صف وحدات GPU لديك، اختر المحرك وكمّ الأوزان، ثم يحسب مُلاءِم النماذج
           الأوزان وذاكرة KV والأنشطة وCUDA graphs والزيادة الخاصة بالإطار، ويعرض الملاءمة والسياق والتوازي وسرعة تقريبية وأمر التشغيل.</p>
           <p>بناه عبدالرحمن الميمان، مهندس ذكاء اصطناعي وسحابة.</p>
           <div class="docs-links">
@@ -1350,11 +1352,11 @@ function renderDocsArabicView() {
         </section>
         <section id="docs-interconnects"><h4>NVLink و RDMA و PCIe و Ethernet</h4>
           <p><b>NVLink / NVSwitch</b> هو أسرع ربط خاص من NVIDIA للوحدات ضمن الخادم، وهو الخيار المثالي للتوازي الموترّي TP. يصل H100/H200 SXM إلى 900 GB/s، وتصل Blackwell SXM إلى 1.8 TB/s.</p>
-          <p><b>RDMA</b> عبر InfiniBand أو RoCE مع GPUDirect RDMA هو المسار المعتاد بين الخوادم. يظل أبطأ بكثير من NVLink، لذلك يُفضّل TP داخل الخادم وPP بين الخوادم. في مجموعة Mac Studio يعرض podfit خيار <b>RDMA (Thunderbolt 5)</b>؛ تحتاج إلى llama.cpp RPC أو MLX distributed، ولا تتحد الذاكرة تلقائياً.</p>
+          <p><b>RDMA</b> عبر InfiniBand أو RoCE مع GPUDirect RDMA هو المسار المعتاد بين الخوادم. يظل أبطأ بكثير من NVLink، لذلك يُفضّل TP داخل الخادم وPP بين الخوادم. في مجموعة Mac Studio يعرض مُلاءِم النماذج خيار <b>RDMA (Thunderbolt 5)</b>؛ تحتاج إلى llama.cpp RPC أو MLX distributed، ولا تتحد الذاكرة تلقائياً.</p>
           <p><b>PCIe</b> مناسب لعدد محدود من البطاقات، بينما Ethernet العادي يصلح أكثر لـ Pipeline Parallel ولا يصلح عملياً لـ TP عبر الخوادم.</p>
         </section>
         <section id="docs-apple"><h4>Apple Silicon والذاكرة الموحّدة</h4>
-          <p>تستخدم Apple Silicon ذاكرة موحدة تشاركها CPU وGPU وNeural Engine. يحتسب podfit نحو 75% من الذاكرة المعلنة كمساحة متاحة بأمان للنموذج كي يترك حيزاً للنظام والتطبيقات.</p>
+          <p>تستخدم Apple Silicon ذاكرة موحدة تشاركها CPU وGPU وNeural Engine. يحتسب مُلاءِم النماذج نحو 75% من الذاكرة المعلنة كمساحة متاحة بأمان للنموذج كي يترك حيزاً للنظام والتطبيقات.</p>
           <p>تعمل أجهزة Max وUltra مع <b>llama.cpp (Metal)</b> أو <b>MLX</b>، لا مع vLLM أو SGLang. يضيف Ultra عرض نطاق وسعة أكبر؛ وUltraFusion لا يجعل عدة أجهزة Mac Studio جهازاً واحداً—التوزيع يحتاج runtime وشبكة فعلية.</p>
         </section>
         <section id="docs-nvidia"><h4>NVIDIA و L20</h4>
@@ -1376,7 +1378,7 @@ function renderDocsArabicView() {
           <p>العائلات الأكثر صلة: <b>GN7i</b> لـ A10، و<b>GN8is</b>/<b>GN8v</b> لـ L20 مع خيارات 1 و2 و4 و8 GPU، وخط <b>gx8sf / L20X</b> الذي يركز على الذاكرة والشبكات السريعة. تختلف الإتاحة حسب المنطقة وقد يتطلب بعض الأنواع التواصل مع المبيعات. تحقق من صفحة ECS الخاصة بمنطقتك قبل اعتماد الاسم أو السعة.</p>
         </section>
 
-        <section id="docs-engines"><h3>محركات LLM</h3><p>يعرض podfit فقط المسارات التي يمكن للمحرك والعتاد تشغيلها فعلاً. اختر المحرك أولاً لأن نوع الأوزان ونظام التشغيل والـ kernels تختلف باختلافه.</p></section>
+        <section id="docs-engines"><h3>محركات LLM</h3><p>يعرض مُلاءِم النماذج فقط المسارات التي يمكن للمحرك والعتاد تشغيلها فعلاً. اختر المحرك أولاً لأن نوع الأوزان ونظام التشغيل والـ kernels تختلف باختلافه.</p></section>
         <section id="docs-vllm"><h4>vLLM</h4><p>Linux فقط. مناسب لخدمات CUDA/ROCm عالية الإنتاجية ويدعم fp16 وbf16 وfp32 وfp8 وint8 وAWQ وGPTQ وbitsandbytes وMXFP4 وNVFP4. يستخدم paged attention والتوازي الموترّي والخطي للخدمات الكبيرة.</p></section>
         <section id="docs-sglang"><h4>SGLang</h4><p>Linux فقط. محرك خدمة سريع يدعم fp16 وbf16 وfp8 وint8 وAWQ وGPTQ وMXFP4 وNVFP4. خيار جيد عند الحاجة إلى runtime برمجي وتحسينات توجيه/ذاكرة موجهة للاستدلال.</p></section>
         <section id="docs-llamacpp"><h4>llama.cpp</h4><p>يعمل على Linux وWindows وmacOS. يدعم GGUF وfp16، وهو المسار الأساسي للأجهزة المحلية وApple Silicon عبر Metal. يمكنه توزيع الطبقات عبر أجهزة متعددة أو عبر RPC، لكن السرعة تعتمد على الربط الفعلي بين الأجهزة.</p></section>
@@ -1389,7 +1391,7 @@ function renderDocsArabicView() {
 .\.venv\Scripts\python -m pip install -r requirements.txt
 .\.venv\Scripts\python -m uvicorn app.main:app --reload --port 8510</pre>
         </section>
-        <p class="docs-foot">podfit مرخص تحت GPL-3.0. راجع <code>LICENSE</code> في المستودع.</p>
+        <p class="docs-foot">مُلاءِم النماذج مرخص تحت GPL-3.0. راجع <code>LICENSE</code> في المستودع.</p>
       </article>
     </div>`;
 }
