@@ -220,7 +220,7 @@ function familyKeyFor(g) {
 /* ------------------------------------------------------------------ wiring */
 function wire() {
   $('#tabs').addEventListener('click', e => {
-    const b = e.target.closest('.tab'); if (b) switchView(b.dataset.view);
+    const b = e.target.closest('.tab'); if (b && b.dataset.view) switchView(b.dataset.view);
   });
   $('#btn-setup').addEventListener('click', () => openSetup($('#setup-panel').classList.contains('hidden')));
   $('#setup-close').addEventListener('click', () => openSetup(false));
