@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>podfit — will this model run on my GPUs?</title>
-<link rel="stylesheet" href="/static/styles.css?v=nier2">
+<link rel="stylesheet" href="/static/styles.css?v=nier3">
 </head>
 <body>
 
@@ -20,11 +20,50 @@
     <button class="tab" data-view="arch">Compatibility</button>
   </nav>
   <div class="topbar-right">
+    <button class="ghost sm" id="btn-keys" title="Use your own HuggingFace / Artificial Analysis keys">API keys</button>
     <button class="ghost sm" id="btn-refresh" title="Clear cached HuggingFace and benchmark responses">Refresh data</button>
     <span class="pill hidden" id="hf-status">HF …</span>
     <span class="pill hidden" id="aa-status">AA …</span>
   </div>
 </header>
+
+<!-- ===================== API keys panel ===================== -->
+<section class="setup-panel hidden" id="keys-panel">
+  <div class="setup-head">
+    <h2>API Keys</h2>
+    <div class="row-gap">
+      <button class="ghost" id="keys-close">Done</button>
+    </div>
+  </div>
+  <div class="setup-grid" style="grid-template-columns:1fr 1fr">
+    <div class="card">
+      <div class="sect-head"><span class="sect">HuggingFace</span></div>
+      <label class="field"><span>Personal access token</span>
+        <input id="key_hf" type="password" placeholder="hf_…" autocomplete="off" spellcheck="false"></label>
+      <p class="gpu-note">Used from your browser only, instead of this server's key. Stored in
+        this browser's local storage on this device — never sent anywhere but podfit's own API,
+        never saved server-side. Unlocks gated repos (Llama, Gemma, some Mistral) and raises the
+        Hub rate limit.
+        <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener">Get a token ↗</a></p>
+      <p class="hint" id="key_hf_status"></p>
+    </div>
+    <div class="card">
+      <div class="sect-head"><span class="sect">Artificial Analysis</span></div>
+      <label class="field"><span>API key</span>
+        <input id="key_aa" type="password" placeholder="aa_…" autocomplete="off" spellcheck="false"></label>
+      <p class="gpu-note">Used from your browser only, instead of this server's key. Stored in
+        this browser's local storage on this device — never sent anywhere but podfit's own API,
+        never saved server-side. Unlocks intelligence scores for models newer than the archived
+        HF leaderboard.
+        <a href="https://artificialanalysis.ai/" target="_blank" rel="noopener">Get a key ↗</a></p>
+      <p class="hint" id="key_aa_status"></p>
+    </div>
+  </div>
+  <div class="row-gap" style="margin-top:14px">
+    <button class="primary" id="keys-save">Save keys</button>
+    <button class="ghost danger" id="keys-clear">Clear keys</button>
+  </div>
+</section>
 
 <!-- ===================== setup bar ===================== -->
 <div class="setupbar" id="setupbar">
@@ -200,6 +239,6 @@
   <section id="view-arch" class="view hidden"></section>
 </main>
 
-<script src="/static/app.js?v=nier1"></script>
+<script src="/static/app.js?v=nier3"></script>
 </body>
 </html>

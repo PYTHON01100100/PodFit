@@ -7,6 +7,7 @@ against the same model do not re-hit the Hub.
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import json
 import os
 import time
@@ -19,6 +20,23 @@ HF_API = "https://huggingface.co/api"
 HF_RESOLVE = "https://huggingface.co/{repo}/resolve/{rev}/{path}"
 TOKEN = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN") or ""
 TIMEOUT = httpx.Timeout(20.0, connect=10.0)
+
+# A visitor's own token (BYOK), set per-request from the X-HF-Token header.
+# contextvars are task-local, so concurrent requests never see each other's key.
+_token_override: contextvars.ContextVar[str] = contextvars.ContextVar("hf_token_override", default="")
+
+
+def set_token(token: str) -> None:
+    _token_override.set((token or "").strip())
+
+
+def current_token() -> str:
+    return _token_override.get() or TOKEN
+
+
+def using_personal_token() -> bool:
+    """True when this request supplied its own key rather than the server's."""
+    return bool(_token_override.get())
 
 SEARCH_TTL = 300          # 5 min - trending/download counts move
 DETAIL_TTL = 6 * 3600     # 6 h  - configs are effectively immutable per revision
@@ -50,8 +68,9 @@ PIPELINES = [
 
 def _headers() -> dict:
     h = {"User-Agent": "podfit/1.0"}
-    if TOKEN:
-        h["Authorization"] = f"Bearer {TOKEN}"
+    tok = current_token()
+    if tok:
+        h["Authorization"] = f"Bearer {tok}"
     return h
 
 
@@ -131,7 +150,10 @@ async def search(q: str = "", pipeline: str = "", sort: str = "downloads",
                             "bitsandbytes", "compressed-tensors", "exl2", "gguf")],
             "tags": [t for t in tags if not t.startswith(("arxiv:", "base_model:", "dataset:", "doi:", "region:"))][:12],
         })
-    db.cache_put(key, out)
+    # Skipped for a personal token: results could include repos that token
+    # alone can see (private/gated), which must not leak to other visitors.
+    if not using_personal_token():
+        db.cache_put(key, out)
     return out
 
 
@@ -183,9 +205,9 @@ async def model_detail(repo: str, revision: str = "main", refresh: bool = False,
                 if not cfg.get("num_hidden_layers") and e.kind == "gated":
                     raise HFError(
                         f"{repo} is gated: its config.json cannot be read anonymously. "
-                        "Accept the licence on the Hub, create a read token, and set "
-                        "HF_TOKEN in the podfit container environment "
-                        "(docker compose .env), then restart it.",
+                        "Accept the licence on the Hub, create a read token, and add it "
+                        "under API keys in this app (or set HF_TOKEN in the podfit "
+                        "container environment).",
                         status=403, kind="gated")
             except (httpx.HTTPError, json.JSONDecodeError):
                 cfg = meta.get("config") or {}
@@ -239,7 +261,11 @@ async def model_detail(repo: str, revision: str = "main", refresh: bool = False,
         "light": light,
         "fetched_at": time.time(),
     }
-    db.cache_put(key + (":light" if light else ""), detail)
+    # Content fetched with a visitor's own token (gated repos, private search
+    # hits) must not leak into the shared cache for the next visitor to read
+    # back out. Only cache what the server's own (or no) token produced.
+    if not using_personal_token():
+        db.cache_put(key + (":light" if light else ""), detail)
     return detail
 
 

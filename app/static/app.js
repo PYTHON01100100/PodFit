@@ -65,7 +65,21 @@ function setHash(patch) {
   history.replaceState(null, '', '#' + p.toString().replace(/%2F/gi, '/'));
 }
 
+/* ------------------------------------------------------------------ byok */
+// Personal HF/AA keys, kept in this browser only. Sent as headers so the
+// server uses them for this request instead of its own (if any) - see
+// app/main.py's _byok dependency. Never written anywhere but localStorage.
+const KEY_HF = 'podfit_hf_token', KEY_AA = 'podfit_aa_key';
+const getKey = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+const setKey = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) { /* storage unavailable */ } };
+
 async function api(path, opts) {
+  opts = opts || {};
+  const hfTok = getKey(KEY_HF), aaKey = getKey(KEY_AA);
+  if (hfTok || aaKey) {
+    opts = Object.assign({}, opts, { headers: Object.assign({}, opts.headers,
+      hfTok ? { 'X-HF-Token': hfTok } : {}, aaKey ? { 'X-AA-Key': aaKey } : {}) });
+  }
   const r = await fetch(path, opts);
   if (!r.ok) {
     let msg = r.statusText;
@@ -115,15 +129,30 @@ async function loadAvatars(ids, then) {
 }
 
 /* ------------------------------------------------------------------ boot */
-(async function boot() {
-  CAT = await api('/api/catalog');
-  $('#hf-status').textContent = 'HF ' + (CAT.hf_token ? '· token set' : '· anonymous');
-  $('#hf-status').title = CAT.hf_token ? 'Gated repos resolve.'
-    : 'No HF_TOKEN — gated repos will not resolve.';
-  const aa = CAT.bench && CAT.bench.artificial_analysis.configured;
+function applyKeyStatus(cat) {
+  const hasHf = !!getKey(KEY_HF), hasAa = !!getKey(KEY_AA);
+  $('#hf-status').textContent = 'HF ' + (cat.hf_token ? '· token set' : '· anonymous');
+  $('#hf-status').title = cat.hf_token ? 'Gated repos resolve.'
+    : 'No HF token — gated repos will not resolve.';
+  const aa = cat.bench && cat.bench.artificial_analysis.configured;
   $('#aa-status').textContent = 'AA ' + (aa ? '· on' : '· off');
   $('#aa-status').title = aa ? 'Artificial Analysis scores are available.'
-    : 'No AA_API_KEY — only the archived HF leaderboard supplies scores.';
+    : 'No AA key — only the archived HF leaderboard supplies scores.';
+  $('#key_hf_status').textContent = hasHf
+    ? (cat.hf_token ? 'Your personal token is active.' : 'Saved, but not recognized — double-check it.')
+    : (cat.hf_token ? 'No personal token saved — using the server’s token.'
+                    : 'No token — gated repos will not resolve.');
+  $('#key_aa_status').textContent = hasAa
+    ? (aa ? 'Your personal key is active.' : 'Saved, but not recognized — double-check it.')
+    : (aa ? 'No personal key saved — using the server’s key.'
+          : 'No key — only the archived HF leaderboard supplies scores.');
+}
+
+(async function boot() {
+  $('#key_hf').value = getKey(KEY_HF);
+  $('#key_aa').value = getKey(KEY_AA);
+  CAT = await api('/api/catalog');
+  applyKeyStatus(CAT);
 
   fill('#pipeline', CAT.pipelines.map(p => [p.key, p.label]), '');
   fillGPUs();
@@ -196,6 +225,26 @@ function wire() {
   $('#btn-setup').addEventListener('click', () => openSetup($('#setup-panel').classList.contains('hidden')));
   $('#setup-close').addEventListener('click', () => openSetup(false));
   $('#ph-open').addEventListener('click', () => openSetup(true));
+
+  $('#btn-keys').addEventListener('click', () => $('#keys-panel').classList.toggle('hidden'));
+  $('#keys-close').addEventListener('click', () => $('#keys-panel').classList.add('hidden'));
+  $('#keys-save').addEventListener('click', async () => {
+    setKey(KEY_HF, $('#key_hf').value.trim());
+    setKey(KEY_AA, $('#key_aa').value.trim());
+    $('#keys-save').textContent = 'Checking…';
+    try {
+      CAT = await api('/api/catalog');
+      applyKeyStatus(CAT);
+    } finally {
+      $('#keys-save').textContent = 'Save keys';
+    }
+  });
+  $('#keys-clear').addEventListener('click', async () => {
+    setKey(KEY_HF, ''); setKey(KEY_AA, '');
+    $('#key_hf').value = ''; $('#key_aa').value = '';
+    CAT = await api('/api/catalog');
+    applyKeyStatus(CAT);
+  });
 
   $('#q').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(search, 320); });
   $('#src-toggle').addEventListener('click', e => {

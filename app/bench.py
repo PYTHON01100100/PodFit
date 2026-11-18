@@ -16,6 +16,7 @@ score rather than a guess.
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import os
 import re
 
@@ -24,6 +25,17 @@ import httpx
 from . import db
 
 AA_KEY = os.environ.get("AA_API_KEY") or os.environ.get("ARTIFICIAL_ANALYSIS_API_KEY") or ""
+
+# A visitor's own key (BYOK), set per-request from the X-AA-Key header.
+_key_override: contextvars.ContextVar[str] = contextvars.ContextVar("aa_key_override", default="")
+
+
+def set_key(key: str) -> None:
+    _key_override.set((key or "").strip())
+
+
+def current_key() -> str:
+    return _key_override.get() or AA_KEY
 AA_URL = "https://artificialanalysis.ai/api/v2/data/llms/models"
 DS = "https://datasets-server.huggingface.co/filter"
 OLLB_DATASET = "open-llm-leaderboard/contents"
@@ -212,8 +224,12 @@ def _aa_record(m: dict) -> dict | None:
 
 
 async def aa_all() -> list[dict]:
-    """All AA models, cached. Empty list when no key is configured."""
-    if not AA_KEY:
+    """All AA models, cached. Empty list when no key is configured.
+
+    The listing itself is the same public dataset for any valid key, so the
+    cache is shared across visitors regardless of whose key populated it."""
+    key = current_key()
+    if not key:
         return []
     ckey = f"aa:all/v{MATCH_VERSION}"
     hit = db.cache_get(ckey, TTL)
@@ -225,7 +241,7 @@ async def aa_all() -> list[dict]:
             return hit
         try:
             async with httpx.AsyncClient() as client:
-                r = await client.get(AA_URL, headers={"x-api-key": AA_KEY},
+                r = await client.get(AA_URL, headers={"x-api-key": key},
                                      timeout=httpx.Timeout(30.0))
                 if r.status_code != 200:
                     return []
@@ -420,6 +436,6 @@ async def lookup_many(pairs: list[tuple[str, str | None]]) -> dict:
 
 def status() -> dict:
     return {
-        "artificial_analysis": {"configured": bool(AA_KEY), "note": AA_NOTE},
+        "artificial_analysis": {"configured": bool(current_key()), "note": AA_NOTE},
         "open_llm_leaderboard": {"configured": True, "note": OLLB_NOTE},
     }

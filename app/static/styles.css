@@ -128,6 +128,8 @@ details .grid2{margin-top:11px}
 .gpu-note{margin:10px 0 0;font-size:11.5px;color:var(--faint);line-height:1.55;
   border-left:2px solid var(--acc);padding-left:9px}
 .gpu-note:empty{display:none}
+.gpu-note a{color:var(--link)}
+.gpu-note a:hover{color:var(--ink)}
 
 /* ---------- search results ---------- */
 .results{margin-top:10px;max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:3px}

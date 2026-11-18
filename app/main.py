@@ -6,7 +6,7 @@ import json
 import os
 import pathlib
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -17,8 +17,19 @@ from .catalog import ENGINES, GPUS, KV_DTYPES, WEIGHT_FORMATS
 STATIC = pathlib.Path(__file__).parent / "static"
 SEED_FILE = os.environ.get("PODFIT_SEED", "/data/detected_hardware.json")
 
+
+async def _byok(x_hf_token: str = Header(default="", alias="X-HF-Token"),
+                x_aa_key: str = Header(default="", alias="X-AA-Key")) -> None:
+    """Bring-your-own-key: a visitor's own HF/AA keys, sent as headers, take
+    over for this request instead of the server's own (X-HF-Token/X-AA-Key).
+    Scoped per-request via contextvars, never persisted server-side."""
+    hf.set_token(x_hf_token)
+    bench.set_key(x_aa_key)
+
+
 app = FastAPI(title="podfit", version="1.0",
-              description="Model-to-GPU feasibility calculator")
+              description="Model-to-GPU feasibility calculator",
+              dependencies=[Depends(_byok)])
 
 
 @app.on_event("startup")
@@ -50,7 +61,7 @@ def catalog():
         "engines": [{"key": k, **v} for k, v in ENGINES.items()],
         "pipelines": [{"key": k, "label": lbl} for k, lbl in hf.PIPELINES],
         "arch_count": len(archsupport.ARCH),
-        "hf_token": bool(hf.TOKEN),
+        "hf_token": bool(hf.current_token()),
         "bench": bench.status(),
     }
 
@@ -81,8 +92,9 @@ async def arch_support(req: ArchSupportRequest):
 
 @app.get("/api/aa/search")
 async def aa_search(q: str = "", limit: int = Query(25, ge=1, le=60)):
-    if not bench.AA_KEY:
-        raise HTTPException(400, "Artificial Analysis is not configured (no AA_API_KEY).")
+    if not bench.current_key():
+        raise HTTPException(400, "Artificial Analysis is not configured. Add your own key "
+                                 "under API keys, or set AA_API_KEY on the server.")
     try:
         return await aa_source.search(q, limit)
     except Exception as e:
@@ -106,7 +118,7 @@ def arch_table():
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "hf_token": bool(hf.TOKEN), "cache": db.cache_stats()}
+    return {"ok": True, "hf_token": bool(hf.current_token()), "cache": db.cache_stats()}
 
 
 # ---------------------------------------------------------------------------
