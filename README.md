@@ -168,6 +168,108 @@ size, which is not something a memory calculation would ever reveal. Dense MLA
 (V2, V3, R1) is unaffected: it keeps its Triton fallback. Kernel coverage moves
 between releases, so re-check on a version bump.
 
+## Hardware reference
+
+### Interconnects: NVLink, RDMA, PCIe, Ethernet
+
+What links the GPUs together changes how far tensor parallelism (TP) can
+scale, and podfit's `interconnect` field (Setup → Hardware → the advanced
+disclosure) drives the warnings and blockers it raises about that:
+
+- **NVLink / NVSwitch** — NVIDIA's proprietary GPU-to-GPU fabric, the
+  fastest option and the one TP really wants. Bandwidth depends on the SKU:
+  900 GB/s on H100/H200 SXM, 1.8 TB/s on Blackwell SXM (B100/B200/GB200).
+  Many PCIe-form-factor cards (L40S, L4, RTX 6000 Ada, the RTX 50-series)
+  ship with none at all — TP on those falls back to PCIe and degrades hard
+  past a few GPUs.
+- **RDMA (InfiniBand / RoCE, with GPUDirect RDMA)** — the standard way to
+  extend TP *across nodes*: direct GPU-to-GPU memory access over the
+  network, bypassing the CPU. Needs 200 Gb/s+ to be worth it; below that,
+  prefer pipeline parallelism (PP) across nodes instead, since PP only
+  ships one activation tensor per stage boundary rather than an all-reduce
+  every layer.
+- **RDMA over Thunderbolt 5 (Apple Silicon)** — a newer entry in the same
+  dropdown, for clustering multiple Mac Studios rather than NVIDIA GPUs.
+  Apple's own MLX research uses exactly this transport for distributed
+  inference across machines. See the Apple Silicon section below.
+- **PCIe only / Ethernet** — no dedicated GPU fabric. PCIe-only is fine
+  inside one box for PP; plain Ethernet is viable for PP across nodes but
+  not for TP, which podfit flags as a blocker if you try it.
+
+### Apple Silicon: unified memory, UltraFusion, and clustering
+
+podfit treats Apple Silicon as its own vendor family ("Metal", a synthetic
+compute-capability sentinel of `-9.0`), gated to llama.cpp and MLX only —
+vLLM and SGLang are CUDA/ROCm-only and will never run on it.
+
+- **Unified memory.** CPU, GPU and Neural Engine share one memory pool;
+  by convention (and by default in every Apple catalog entry) ~75% of it
+  is treated as GPU-addressable, matching what llama.cpp/MLX actually get
+  to use.
+- **Max vs. Ultra.** A Max chip is a single die. An Ultra chip fuses two
+  Max dies together over Apple's UltraFusion interposer — roughly double
+  the CPU/GPU/Neural Engine cores and double the memory bandwidth of the
+  Max it's built from, not a multi-GPU setup in the NVLink sense.
+  M5 Ultra is the first Ultra built this way with per-core Neural
+  Accelerators (matrix-multiply units) in its GPU, which Apple says
+  speeds up prefill far more than decode — decode stays bandwidth-bound
+  either way.
+- **Clustering multiple Macs.** For models too large for even a single
+  512 GB M3/M5 Ultra, llama.cpp's RPC backend or MLX's distributed
+  runtime can pool several machines over Thunderbolt 5 (RDMA) or plain
+  Ethernet. Set `nodes` > 1 in podfit to model this: memory pools across
+  machines (layer-split, same as multi-GPU llama.cpp), but the speed
+  figures still assume each layer's compute stays within *one* chip's own
+  bandwidth — the inter-machine transfer time itself isn't simulated,
+  which is exactly what the finding podfit raises in this situation
+  (`"N separate machines, not one box"`) says.
+
+### NVIDIA: compute capability, architecture families, and the L20
+
+Every NVIDIA kernel-availability gate in podfit (FlashAttention-2, FP8,
+sparse-MLA, and so on) keys off **CUDA compute capability** (`sm_XX`), not
+the marketing name. Roughly, oldest to newest: Volta (`sm_70`) → Turing
+(`sm_75`) → Ampere (`sm_80`/`sm_86`) → Ada (`sm_89`) → Hopper (`sm_90`) →
+Blackwell (`sm_100` datacenter / `sm_120` RTX-class). NVLink availability
+is a function of SKU and form factor, not architecture alone — SXM parts
+get it, most PCIe and all consumer cards don't.
+
+**The L20** is an Ada-generation (AD102) card built specifically for the
+China market after US export controls cut off H100/A100-class chips
+there: 48 GB GDDR6 at 864 GB/s, FP8-capable (`sm_89`) but roughly a
+quarter of an H100's dense tensor FLOPS, and **no NVLink** — tensor-
+parallel traffic crosses PCIe Gen4 x16, so TP > 4 scales poorly on it.
+It has compliance-driven siblings in the catalog with the same story:
+H20/H20-141 (Hopper-class HBM bandwidth, but tensor FLOPS cut to a
+fraction of H100's), H800 (an H100 with NVLink capped at 400 GB/s instead
+of 900), A800 (an A100 with NVLink capped at 400 GB/s). podfit sizes all
+of these against their real, cut-down numbers — not the uncapped chip's
+spec sheet.
+
+### Renting GPUs: the cloud landscape
+
+- **Hyperscalers** (AWS, Azure, GCP, Oracle Cloud) — the broadest catalog
+  and the strongest reliability/compliance guarantees, generally the most
+  expensive on-demand. Worth it when you need the rest of their ecosystem
+  (networking, IAM, managed services) alongside the GPU, not just the GPU.
+- **GPU-specialist "neoclouds"** (Lambda, CoreWeave, Nebius, Crusoe,
+  Voltage Park, and similar) — a narrower catalog focused on current
+  NVIDIA silicon, usually meaningfully cheaper than hyperscalers for the
+  same card, and often first to get new SKUs (H200, B200, GB200) in volume.
+- **Marketplaces / spot platforms** (RunPod, Vast.ai, Paperspace) — the
+  cheapest on-demand pricing and the most variable reliability and
+  availability. A good fit for a short sizing or benchmarking run, a
+  risky one for production serving.
+- **Regional / compliance-driven clouds** (Alibaba Cloud, Tencent Cloud,
+  Huawei Cloud) — the primary source for the export-compliant chips in
+  podfit's catalog (H20, H800, L20), since those SKUs largely don't exist
+  outside China-market deployments.
+- **Bare metal / colo** — full control and the best $/GPU-hour at scale,
+  but you own the power, cooling, networking, and NVLink/InfiniBand
+  fabric design yourself. It's also the only path to an Apple Silicon
+  cluster — no cloud provider rents Mac Studios by the hour at any real
+  scale, so a 4-node M5 Ultra RDMA cluster is hardware you buy, not rent.
+
 ## Layout
 
 ```
