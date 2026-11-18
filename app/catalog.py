@@ -124,32 +124,38 @@ GPUS = [
     # --- Apple (llama.cpp / MLX only) --------------------------------------
     dict(id="m4-max-128", name="Apple M4 Max 128GB unified", vendor="apple",
          arch="Metal", vram_gb=96, bandwidth=546, fp16=34, fp8=0, fp4=0,
+         cores=dict(cpu=16, gpu=40, npu=16),
          cc=CC_METAL, nvlink=0, tdp=90, form="Unified",
          note="Unified memory; ~75% is addressable by the GPU by default."),
     dict(id="m3-ultra-512", name="Apple M3 Ultra 512GB unified", vendor="apple",
          arch="Metal", vram_gb=384, bandwidth=819, fp16=57, fp8=0, fp4=0,
+         cores=dict(cpu=32, gpu=80, npu=32),
          cc=CC_METAL, nvlink=0, tdp=140, form="Unified",
          note="Unified memory; ~75% is addressable by the GPU by default."),
     dict(id="m5-max-36", name="Apple M5 Max 36GB unified (32-core GPU)", vendor="apple",
          arch="Metal", vram_gb=27, bandwidth=460, fp16=46, fp8=0, fp4=0,
+         cores=dict(cpu=18, gpu=32, npu=16),
          cc=CC_METAL, nvlink=0, tdp=90, form="Unified",
          note="Unified memory; ~75% is addressable by the GPU by default. 32-core GPU bin "
               "(the 40-core bin starts at 48GB). FP16 is a third-party estimate for its new "
               "per-core Neural Accelerator matmul units - Apple publishes no FLOPS figure."),
     dict(id="m5-max-64", name="Apple M5 Max 64GB unified (40-core GPU)", vendor="apple",
          arch="Metal", vram_gb=48, bandwidth=614, fp16=70, fp8=0, fp4=0,
+         cores=dict(cpu=18, gpu=40, npu=16),
          cc=CC_METAL, nvlink=0, tdp=90, form="Unified",
          note="Unified memory; ~75% is addressable by the GPU by default. FP16 is a "
               "third-party estimate for its per-core Neural Accelerator matmul units - "
               "Apple publishes no FLOPS figure."),
     dict(id="m5-max-128", name="Apple M5 Max 128GB unified (40-core GPU)", vendor="apple",
          arch="Metal", vram_gb=96, bandwidth=614, fp16=70, fp8=0, fp4=0,
+         cores=dict(cpu=18, gpu=40, npu=16),
          cc=CC_METAL, nvlink=0, tdp=90, form="Unified",
          note="Unified memory; ~75% is addressable by the GPU by default. FP16 is a "
               "third-party estimate for its per-core Neural Accelerator matmul units - "
               "Apple publishes no FLOPS figure."),
     dict(id="m5-ultra-512", name="Apple M5 Ultra 512GB unified", vendor="apple",
          arch="Metal", vram_gb=384, bandwidth=1200, fp16=80, fp8=0, fp4=0,
+         cores=dict(cpu=36, gpu=80, npu=32),
          cc=CC_METAL, nvlink=0, tdp=140, form="Unified",
          note="Unified memory; ~75% is addressable by the GPU by default. First Ultra chip "
               "built from two fused M5 Max dies (UltraFusion), 80-core GPU with Neural "
@@ -158,9 +164,11 @@ GPUS = [
               "Apple-published figure."),
     dict(id="m6-32", name="Apple M6 32GB unified", vendor="apple",
          arch="Metal", vram_gb=24, bandwidth=170, fp16=12, fp8=0, fp4=0,
+         cores=dict(cpu=12, gpu=12, npu=32),
          cc=CC_METAL, nvlink=0, tdp=22, form="Unified",
          note="Unified memory; ~75% is addressable by the GPU by default. Apple's first "
-              "2nm chip, 12-core GPU with per-core Neural Accelerators. Entry-tier memory "
+              "2nm chip, 12-core GPU with per-core Neural Accelerators and a dual 16-core "
+              "Neural Engine (32 cores total). Entry-tier memory "
               "and bandwidth - fine for small/quantized models, not for anything the Max/"
               "Ultra tier is built for. FP16 has no verified figure; treated conservatively."),
 ]

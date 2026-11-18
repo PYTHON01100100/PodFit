@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>podfit — will this model run on my GPUs?</title>
-<link rel="stylesheet" href="/static/styles.css?v=nier3">
+<link rel="stylesheet" href="/static/styles.css?v=nier4">
 </head>
 <body>
 
@@ -145,6 +145,7 @@
           <label class="field"><span>Interconnect</span>
             <select id="interconnect">
               <option value="nvlink">NVLink / NVSwitch</option>
+              <option value="rdma">RDMA (Thunderbolt 5 - Mac Studio cluster)</option>
               <option value="pcie">PCIe only</option>
               <option value="ib">InfiniBand / RoCE</option>
               <option value="eth">Ethernet</option>
@@ -239,6 +240,6 @@
   <section id="view-arch" class="view hidden"></section>
 </main>
 
-<script src="/static/app.js?v=nier3"></script>
+<script src="/static/app.js?v=nier4"></script>
 </body>
 </html>

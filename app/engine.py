@@ -326,7 +326,7 @@ def evaluate(model: dict, hw: dict, rt: dict, _suggest: bool = True) -> dict:
 
     if is_local:
         result = _size_local(spec, gpu, w_bytes, ctx, seqs, kv_elem, host_ram,
-                             total_gpus, rt, findings)
+                             total_gpus, rt, findings, interconnect)
     else:
         result = _size_server(spec, gpu, w_bytes, params, ctx, seqs, kv_elem, tp, pp,
                               util, eager, batched_tokens, images, findings)
@@ -710,7 +710,8 @@ def _size_server(spec, gpu, w_bytes, params, ctx, seqs, kv_elem, tp, pp, util,
 # ---------------------------------------------------------------------------
 # llama.cpp / Ollama sizing
 # ---------------------------------------------------------------------------
-def _size_local(spec, gpu, w_bytes, ctx, seqs, kv_elem, host_ram, total_gpus, rt, findings):
+def _size_local(spec, gpu, w_bytes, ctx, seqs, kv_elem, host_ram, total_gpus, rt, findings,
+                interconnect="pcie"):
     layers = spec.get("num_layers") or 1
     vram_total = gpu["vram_gb"] * GIB * total_gpus
     # llama.cpp needs room for the compute buffer and the context, not a fixed
@@ -755,6 +756,18 @@ def _size_local(spec, gpu, w_bytes, ctx, seqs, kv_elem, host_ram, total_gpus, rt
         findings.append(_f("info", f"{total_gpus} GPUs are pooled by layer split",
                            "llama.cpp splits by layer rather than tensor-parallel, so VRAM adds "
                            "up but only one GPU is busy at a time during decode.", "parallel"))
+        if gpu["vendor"] == "apple":
+            net = {"rdma": "Thunderbolt 5 RDMA (~Apple's own MLX distributed-inference figures)",
+                   "eth": "Ethernet", "ib": "InfiniBand/RoCE"}.get(interconnect,
+                   "whatever link you chose - pick RDMA/InfiniBand above if it's Thunderbolt")
+            findings.append(_f("info", f"{total_gpus} separate machines, not one box",
+                               f"Pooling {total_gpus} Mac Studios needs llama.cpp's RPC backend "
+                               "or MLX's distributed runtime - memory doesn't merge on its own. "
+                               f"The speed figures below assume each layer's compute stays at "
+                               f"this chip's {gpu['bandwidth']} GB/s; they do not account for "
+                               f"shipping activations between machines over {net}, which is far "
+                               "slower than on-die unified memory and will dominate at small "
+                               "batch sizes.", "parallel"))
 
     avail_for_kv = vram_total - reserve - w_gpu - compute_buf
     max_ctx1 = (spec.get("max_position_embeddings") or ctx) if spec.get("no_kv_cache") \

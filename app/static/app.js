@@ -285,6 +285,7 @@ function wire() {
     '#c_bw', '#c_fp16', '#c_fp8', '#c_cc', '#c_nvlink', '#c_name'
   ].forEach(s => $(s).addEventListener('change', changed));
   $('#interconnect').addEventListener('change', e => e.target.dataset.touched = '1');
+  ['#gpus_per_node', '#nodes'].forEach(s => $(s).addEventListener('input', gpuChanged));
 
   $('#rig-select').addEventListener('change', applyRig);
   $('#btn-save-rig').addEventListener('click', saveRig);
@@ -360,14 +361,27 @@ function gpuChanged() {
   const g = gpuOf($('#gpu').value);
   if (!g) return;
   $('#gpu-note').textContent = g.note || '';
-  if (!$('#interconnect').dataset.touched) $('#interconnect').value = g.nvlink ? 'nvlink' : 'pcie';
+  if (!$('#interconnect').dataset.touched) {
+    $('#interconnect').value = g.vendor === 'apple' ? 'rdma' : (g.nvlink ? 'nvlink' : 'pcie');
+  }
   const fam = (FAMILIES || []).find(f => f.key === familyKeyFor(g));
-  $('#gpu-facts').innerHTML = [
+  const total = Math.max(1, +$('#gpus_per_node').value || 1) * Math.max(1, +$('#nodes').value || 1);
+  const perUnit = (n, unit) => total > 1 ? `${n} × ${total} = ${(n * total).toLocaleString()}` : `${n} ${unit}`;
+  const facts = [
     ['architecture', fam ? fam.name : g.arch],
     ['VRAM', g.vram_gb + ' GB'], ['bandwidth', g.bandwidth + ' GB/s'],
     ['compute cap', fam ? fam.sm : (g.cc > 0 ? 'sm_' + Math.round(g.cc * 10) : g.arch)],
     ['NVLink', g.nvlink ? g.nvlink + ' GB/s' : 'none'],
-  ].map(([l, v]) => `<div><span>${esc(l)}</span><b${l === 'NVLink' && !g.nvlink ? ' style="color:var(--warn)"' : ''}>${esc(v)}</b></div>`).join('');
+  ];
+  if (g.cores) {
+    facts.push(
+      ['CPU cores', perUnit(g.cores.cpu, 'cores')],
+      ['GPU cores', perUnit(g.cores.gpu, 'cores')],
+      ['Neural Engine', perUnit(g.cores.npu, 'cores')],
+    );
+  }
+  $('#gpu-facts').innerHTML = facts
+    .map(([l, v]) => `<div><span>${esc(l)}</span><b${l === 'NVLink' && !g.nvlink ? ' style="color:var(--warn)"' : ''}>${esc(v)}</b></div>`).join('');
 }
 
 /* ------------------------------------------------------------------ views */
