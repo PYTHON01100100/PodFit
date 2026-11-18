@@ -391,10 +391,11 @@ function switchView(v) {
   $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.view === v));
   $$('.view').forEach(s => s.classList.add('hidden'));
   $('#view-' + v).classList.remove('hidden');
-  $('#setupbar').classList.toggle('hidden', v === 'arch');
+  $('#setupbar').classList.toggle('hidden', v === 'arch' || v === 'docs');
   if (v !== 'size') openSetup(false);
   if (v === 'recommend') renderRecommendView();
   if (v === 'arch') renderArchView();
+  if (v === 'docs' && !$('#view-docs').dataset.built) renderDocsView();
 }
 function openSetup(on) {
   $('#setup-panel').classList.toggle('hidden', !on);
@@ -1199,4 +1200,188 @@ async function renderArchView() {
     const q = e.target.value.toLowerCase();
     $$('#arch-table tbody tr').forEach(tr => tr.style.display = tr.dataset.k.includes(q) ? '' : 'none');
   });
+}
+
+/* ------------------------------------------------------------------ docs */
+function renderDocsView() {
+  $('#view-docs').dataset.built = '1';
+  $('#view-docs').innerHTML = `
+    <div class="view-head"><div><h2>Docs</h2>
+      <p>About the project, hardware reference, and how to contribute.</p></div></div>
+    <div class="docs-layout">
+      <nav class="docs-nav">
+        <a href="#docs-about">About</a>
+        <a href="#docs-hw">Hardware reference</a>
+        <a href="#docs-interconnects" class="sub">Interconnects</a>
+        <a href="#docs-apple" class="sub">Apple Silicon</a>
+        <a href="#docs-nvidia" class="sub">NVIDIA &amp; L20</a>
+        <a href="#docs-cloud" class="sub">Cloud landscape</a>
+        <a href="#docs-contributing">Contributing</a>
+      </nav>
+      <article class="docs-content">
+
+        <section id="docs-about">
+          <h3>About</h3>
+          <p>podfit answers one question: <b>can this model run on my hardware, and how
+            well?</b> Point it at any model on HuggingFace, describe the GPUs you have, choose
+            an engine and quantization, and it computes the real memory breakdown — weights, KV
+            cache, activations, CUDA graphs, framework overhead — tells you what fits, how much
+            context and concurrency you get, roughly how fast it will run, and the exact command
+            to launch it. Nothing is invented: every number traces back to the Hub's real
+            <code>config.json</code>/safetensors metadata, a benchmark provider, or a vendor spec
+            sheet, labelled as an estimate when it has to be one.</p>
+          <p>Built by Abdulrahman Almyman, an AI/cloud engineer.</p>
+          <div class="docs-links">
+            <a class="ghost sm" href="https://www.abdulrahmanalmyman.dev/" target="_blank" rel="noopener">Website ↗</a>
+            <a class="ghost sm" href="https://www.linkedin.com/in/abdulrahmanalmyman/" target="_blank" rel="noopener">LinkedIn ↗</a>
+            <a class="ghost sm" href="https://x.com/PYTHON01100100" target="_blank" rel="noopener">X ↗</a>
+            <a class="ghost sm" href="https://github.com/PYTHON01100100" target="_blank" rel="noopener">GitHub ↗</a>
+            <a class="ghost sm" href="https://github.com/PYTHON01100100/PodFit" target="_blank" rel="noopener">Project repo ↗</a>
+          </div>
+        </section>
+
+        <section id="docs-hw">
+          <h3>Hardware reference</h3>
+        </section>
+
+        <section id="docs-interconnects">
+          <h4>Interconnects: NVLink, RDMA, PCIe, Ethernet</h4>
+          <p>What links the GPUs together changes how far tensor parallelism (TP) can scale, and
+            podfit's <b>Interconnect</b> field (Setup → Hardware → the advanced disclosure) drives
+            the warnings and blockers it raises about that.</p>
+          <ul>
+            <li><b>NVLink / NVSwitch</b> — NVIDIA's proprietary GPU-to-GPU fabric, the fastest
+              option and the one TP really wants. Bandwidth depends on the SKU: 900 GB/s on
+              H100/H200 SXM, 1.8 TB/s on Blackwell SXM (B100/B200/GB200). Many PCIe-form-factor
+              cards (L40S, L4, RTX 6000 Ada, the RTX 50-series) ship with none at all — TP on
+              those falls back to PCIe and degrades hard past a few GPUs.</li>
+            <li><b>RDMA (InfiniBand / RoCE, with GPUDirect RDMA)</b> — the standard way to extend
+              TP <i>across nodes</i>: direct GPU-to-GPU memory access over the network, bypassing
+              the CPU. Needs 200 Gb/s+ to be worth it; below that, prefer pipeline parallelism
+              (PP) across nodes instead, since PP only ships one activation tensor per stage
+              boundary rather than an all-reduce every layer.</li>
+            <li><b>RDMA over Thunderbolt 5 (Apple Silicon)</b> — a newer entry in the same
+              dropdown, for clustering multiple Mac Studios rather than NVIDIA GPUs. Apple's own
+              MLX research uses exactly this transport for distributed inference across
+              machines.</li>
+            <li><b>PCIe only / Ethernet</b> — no dedicated GPU fabric. PCIe-only is fine inside
+              one box for PP; plain Ethernet is viable for PP across nodes but not for TP, which
+              podfit flags as a blocker if you try it.</li>
+          </ul>
+        </section>
+
+        <section id="docs-apple">
+          <h4>Apple Silicon: unified memory, UltraFusion, and clustering</h4>
+          <p>podfit treats Apple Silicon as its own vendor family ("Metal", a synthetic
+            compute-capability sentinel), gated to llama.cpp and MLX only — vLLM and SGLang are
+            CUDA/ROCm-only and will never run on it.</p>
+          <ul>
+            <li><b>Unified memory.</b> CPU, GPU and Neural Engine share one memory pool; by
+              convention (and by default in every Apple catalog entry) ~75% of it is treated as
+              GPU-addressable, matching what llama.cpp/MLX actually get to use.</li>
+            <li><b>Max vs. Ultra.</b> A Max chip is a single die. An Ultra chip fuses two Max dies
+              together over Apple's UltraFusion interposer — roughly double the CPU/GPU/Neural
+              Engine cores and double the memory bandwidth of the Max it's built from, not a
+              multi-GPU setup in the NVLink sense. M5 Ultra is the first Ultra built this way with
+              per-core Neural Accelerators (matrix-multiply units) in its GPU, which speed up
+              prefill far more than decode — decode stays bandwidth-bound either way.</li>
+            <li><b>Clustering multiple Macs.</b> For models too large for even a single 512 GB
+              M3/M5 Ultra, llama.cpp's RPC backend or MLX's distributed runtime can pool several
+              machines over Thunderbolt 5 (RDMA) or plain Ethernet. Set <b>nodes</b> &gt; 1 in
+              podfit to model this: memory pools across machines (layer-split, same as multi-GPU
+              llama.cpp), but the speed figures still assume each layer's compute stays within
+              <i>one</i> chip's own bandwidth — the inter-machine transfer time itself isn't
+              simulated, which is exactly what the finding podfit raises in this situation
+              ("N separate machines, not one box") says.</li>
+          </ul>
+        </section>
+
+        <section id="docs-nvidia">
+          <h4>NVIDIA: compute capability, architecture families, and the L20</h4>
+          <p>Every NVIDIA kernel-availability gate in podfit (FlashAttention-2, FP8, sparse-MLA,
+            and so on) keys off <b>CUDA compute capability</b> (<code>sm_XX</code>), not the
+            marketing name. Roughly, oldest to newest: Volta (<code>sm_70</code>) → Turing
+            (<code>sm_75</code>) → Ampere (<code>sm_80</code>/<code>sm_86</code>) → Ada
+            (<code>sm_89</code>) → Hopper (<code>sm_90</code>) → Blackwell (<code>sm_100</code>
+            datacenter / <code>sm_120</code> RTX-class). NVLink availability is a function of SKU
+            and form factor, not architecture alone — SXM parts get it, most PCIe and all
+            consumer cards don't.</p>
+          <p><b>The L20</b> is an Ada-generation (AD102) card built specifically for the China
+            market after US export controls cut off H100/A100-class chips there: 48 GB GDDR6 at
+            864 GB/s, FP8-capable (<code>sm_89</code>) but roughly a quarter of an H100's dense
+            tensor FLOPS, and <b>no NVLink</b> — tensor-parallel traffic crosses PCIe Gen4 x16, so
+            TP &gt; 4 scales poorly on it. It has compliance-driven siblings in the catalog with
+            the same story: H20/H20-141 (Hopper-class HBM bandwidth, but tensor FLOPS cut to a
+            fraction of H100's), H800 (an H100 with NVLink capped at 400 GB/s instead of 900),
+            A800 (an A100 with NVLink capped at 400 GB/s). podfit sizes all of these against their
+            real, cut-down numbers — not the uncapped chip's spec sheet.</p>
+        </section>
+
+        <section id="docs-cloud">
+          <h4>Renting GPUs: the cloud landscape</h4>
+          <ul>
+            <li><b>Hyperscalers</b> (AWS, Azure, GCP, Oracle Cloud) — the broadest catalog and the
+              strongest reliability/compliance guarantees, generally the most expensive
+              on-demand. Worth it when you need the rest of their ecosystem alongside the GPU, not
+              just the GPU.</li>
+            <li><b>GPU-specialist "neoclouds"</b> (Lambda, CoreWeave, Nebius, Crusoe, Voltage
+              Park, and similar) — a narrower catalog focused on current NVIDIA silicon, usually
+              meaningfully cheaper than hyperscalers for the same card, and often first to get new
+              SKUs (H200, B200, GB200) in volume.</li>
+            <li><b>Marketplaces / spot platforms</b> (RunPod, Vast.ai, Paperspace) — the cheapest
+              on-demand pricing and the most variable reliability and availability. A good fit for
+              a short sizing or benchmarking run, a risky one for production serving.</li>
+            <li><b>Regional / compliance-driven clouds</b> (Alibaba Cloud, Tencent Cloud, Huawei
+              Cloud) — the primary source for the export-compliant chips in podfit's catalog (H20,
+              H800, L20), since those SKUs largely don't exist outside China-market
+              deployments.</li>
+            <li><b>Bare metal / colo</b> — full control and the best $/GPU-hour at scale, but you
+              own the power, cooling, networking, and NVLink/InfiniBand fabric design yourself.
+              It's also the only path to an Apple Silicon cluster — no cloud provider rents Mac
+              Studios by the hour at any real scale.</li>
+          </ul>
+        </section>
+
+        <section id="docs-contributing">
+          <h3>Contributing</h3>
+          <p>podfit is a small, single-maintainer project — contributions are welcome, but keep
+            changes focused and in line with what's already here. The full guide lives in
+            <code>CONTRIBUTING.md</code> in the repo; the short version:</p>
+          <h4>Before you open a PR</h4>
+          <ul>
+            <li><b>Bug reports</b> — open an issue with the model repo, GPU, engine, and runtime
+              settings that produced the wrong result, plus what you expected.</li>
+            <li><b>New hardware</b> — GPU catalog entries need a real source (a vendor spec sheet,
+              an official announcement, or a well-corroborated benchmark). Don't guess at
+              bandwidth or TFLOPS; label an estimate as one.</li>
+            <li><b>New model architectures</b> — need the engine's actual kernel requirements, not
+              assumptions from the model card.</li>
+            <li><b>Features</b> — open an issue first for anything beyond a bug fix.</li>
+          </ul>
+          <h4>Dev setup</h4>
+          <pre>python -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install -r requirements.txt
+PODFIT_DB=./data/podfit.db PODFIT_SEED=./data/detected_hardware.json \\
+  uvicorn app.main:app --reload --port 8510</pre>
+          <p>No build step for the frontend — it's plain HTML/CSS/JS, edit and reload.</p>
+          <h4>Code conventions</h4>
+          <ul>
+            <li>No comments unless they explain a non-obvious <i>why</i> — a hidden constraint, a
+              workaround, an invariant that isn't clear from the code itself.</li>
+            <li>Dense, technical prose everywhere user-facing text appears (findings, docstrings)
+              — no filler, no generic error-message tone.</li>
+            <li>"Nothing is invented" is the project's core promise. Any number the app shows
+              should trace back to a real source or be clearly labeled as an estimate and why.</li>
+            <li>Keep PRs scoped to one change.</li>
+          </ul>
+          <div class="docs-links">
+            <a class="ghost sm" href="https://github.com/PYTHON01100100/PodFit/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Full contributing guide ↗</a>
+            <a class="ghost sm" href="https://github.com/PYTHON01100100/PodFit/issues" target="_blank" rel="noopener">Open an issue ↗</a>
+          </div>
+          <p class="docs-foot">podfit is licensed under GPL-3.0. See <code>LICENSE</code> in the
+            repo.</p>
+        </section>
+
+      </article>
+    </div>`;
 }
