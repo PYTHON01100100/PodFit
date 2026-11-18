@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap");
 
 :root{
   --bg:#26231d; --ink:#d1cbb7; --ink-rgb:209,203,183;
@@ -429,3 +429,26 @@ tbody tr.rowlink:hover td{color:var(--bg) !important}
 .docs-links{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}
 .docs-foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);
   font-size:11.5px;color:var(--faint)}
+
+/* ---------- Arabic / RTL ---------- */
+html[dir="rtl"] body{font-family:"IBM Plex Sans Arabic",var(--sans);letter-spacing:0}
+html[dir="rtl"] .mono,html[dir="rtl"] code,html[dir="rtl"] pre,html[dir="rtl"] .brand,
+html[dir="rtl"] .pill,html[dir="rtl"] .tag,html[dir="rtl"] input,html[dir="rtl"] select{
+  font-family:"IBM Plex Sans Arabic",var(--mono)}
+html[dir="rtl"] .topbar{direction:rtl}
+html[dir="rtl"] .topbar-right{margin-left:0;margin-right:auto}
+html[dir="rtl"] .setup-summary,html[dir="rtl"] .setup-head,html[dir="rtl"] .sect-head,
+html[dir="rtl"] .view-head,html[dir="rtl"] .sec-head{direction:rtl}
+html[dir="rtl"] .gpu-note{border-left:0;border-right:2px solid var(--acc);padding-left:0;padding-right:9px}
+html[dir="rtl"] .finding.f-blocker,html[dir="rtl"] .finding.f-warn{border-left:1px solid var(--line);border-right:3px solid var(--warn)}
+html[dir="rtl"] .finding.f-blocker{border-right-color:var(--bad)}
+html[dir="rtl"] th,html[dir="rtl"] td{text-align:right}
+html[dir="rtl"] .docs-layout{grid-template-columns:minmax(0,1fr) 220px}
+html[dir="rtl"] .docs-nav{grid-column:2;border-left:0;border-right:2px solid var(--line);padding-left:0;padding-right:14px}
+html[dir="rtl"] .docs-content{grid-column:1;grid-row:1}
+html[dir="rtl"] .docs-nav a.sub{padding-left:0;padding-right:14px}
+html[dir="rtl"] .docs-content ul{padding-left:0;padding-right:20px}
+html[dir="rtl"] .docs-content pre,html[dir="rtl"] pre.cmd{direction:ltr;text-align:left;font-family:var(--mono)}
+html[dir="rtl"] .docs-links,html[dir="rtl"] .view-controls{direction:rtl}
+html[dir="rtl"] .tab,html[dir="rtl"] button,.field,html[dir="rtl"] .field input,html[dir="rtl"] .field select{letter-spacing:0}
+@media (max-width:900px){html[dir="rtl"] .docs-layout{grid-template-columns:1fr}html[dir="rtl"] .docs-nav,html[dir="rtl"] .docs-content{grid-column:auto;grid-row:auto}}

@@ -5,6 +5,104 @@ const $$ = s => Array.from(document.querySelectorAll(s));
 let CAT = null, MODEL = null, LAST = null, RIGS = [], AVATARS = new Map(), ARCH_SUPPORT = null;
 let searchTimer, evalTimer, evalSeq = 0, VIEW = 'size', SRC = 'hf';
 
+/* ------------------------------------------------------------------ language */
+// Arabic is a first-class UI mode. Technical identifiers (model IDs, engine
+// names, CLI flags and CUDA/Metal terms) intentionally remain untouched.
+const LANG_KEY = 'podfit_language';
+let LANG = (() => { try { return localStorage.getItem(LANG_KEY) || 'en'; } catch (e) { return 'en'; } })();
+const AR = {
+  'Size a model': 'حجم نموذج', 'Best for my hardware': 'الأفضل لجهازي',
+  'Compatibility': 'التوافق', 'Docs': 'الوثائق', 'API keys': 'مفاتيح API',
+  'Refresh data': 'تحديث البيانات', 'API Keys': 'مفاتيح API', 'Done': 'تم',
+  'Personal access token': 'رمز وصول شخصي', 'API key': 'مفتاح API',
+  'Save keys': 'حفظ المفاتيح', 'Clear keys': 'مسح المفاتيح', 'Setup': 'الإعداد',
+  'Change setup': 'تغيير الإعداد', 'Model': 'النموذج', 'Hardware': 'العتاد',
+  'Runtime': 'بيئة التشغيل', 'HuggingFace': 'HuggingFace',
+  'Artificial Analysis': 'Artificial Analysis', 'All task types': 'كل أنواع المهام',
+  'Trending': 'الأكثر رواجاً', 'Most downloaded': 'الأكثر تحميلاً',
+  'Most liked': 'الأكثر إعجاباً', 'Recently updated': 'حُدِّث مؤخراً', 'Newest': 'الأحدث',
+  '— saved rigs —': '— الأجهزة المحفوظة —', 'Save': 'حفظ', 'Delete': 'حذف',
+  'GPU': 'وحدة GPU', 'How many': 'العدد', 'Nodes': 'العُقد',
+  'Interconnect, host RAM, OS, driver, custom GPU': 'الربط، ذاكرة المضيف، النظام، التعريف، GPU مخصص',
+  'Interconnect': 'الربط البيني', 'PCIe only': 'PCIe فقط', 'Ethernet': 'إيثرنت',
+  'Host RAM (GB)': 'ذاكرة RAM للمضيف (GB)', 'Operating system': 'نظام التشغيل',
+  'NVIDIA driver': 'تعريف NVIDIA', 'VRAM override (GB)': 'تجاوز VRAM (GB)',
+  'usable, if different from spec': 'المتاح، إن اختلف عن المواصفة', 'Name': 'الاسم',
+  'VRAM (GB)': 'VRAM (GB)', 'Bandwidth (GB/s)': 'عرض النطاق (GB/s)',
+  'FP16 dense TFLOPS': 'TFLOPS كثيفة FP16', 'FP8 dense TFLOPS': 'TFLOPS كثيفة FP8',
+  'Compute capability': 'قدرة الحوسبة', 'NVLink (GB/s, 0 = none)': 'NVLink (GB/s، 0 = لا يوجد)',
+  'Use this custom GPU': 'استخدم وحدة GPU المخصصة هذه', 'Engine': 'المحرك',
+  'Weights': 'الأوزان', 'GGUF file': 'ملف GGUF',
+  'Advanced — parallelism, KV dtype, attention, utilization': 'متقدم — التوازي، نوع KV، الانتباه، الاستفادة',
+  'Tensor parallel': 'التوازي الموترّي', 'Pipeline parallel': 'التوازي الخطي',
+  'KV cache dtype': 'نوع بيانات ذاكرة KV', 'Attention backend': 'خلفية الانتباه',
+  'gpu_memory_utilization': 'استخدام ذاكرة GPU', 'GPU layers (-ngl)': 'طبقات GPU (-ngl)',
+  'Images per request': 'الصور لكل طلب', 'Use CUDA graphs / do not enforce eager': 'استخدم CUDA graphs / لا تفرض eager',
+  'Pick a model to size it': 'اختر نموذجاً لحسابه', 'Choose a model': 'اختر نموذجاً',
+  '> awaiting input_': '> بانتظار الإدخال_', 'Search HuggingFace — qwen3, deepseek, gemma…': 'ابحث في HuggingFace — qwen3، deepseek، gemma…',
+  'Filter Artificial Analysis models — qwen, glm, deepseek…': 'رشّح نماذج Artificial Analysis — qwen، glm، deepseek…',
+  'optional': 'اختياري', 'auto': 'تلقائي', 'custom': 'مخصص', 'Filter…': 'تصفية…'
+};
+const i18n = {
+  searching: 'جارٍ البحث…', noModels: 'لا توجد نماذج مطابقة.', ranking: 'جارٍ الترتيب حسب الذكاء…',
+  nothing: 'لا توجد نتائج مطابقة.', reading: 'جارٍ قراءة config.json…', failed: 'فشل البدء: ',
+  refresh: 'تحديث البيانات', cleared: n => `تم مسح ${n}`, checking: 'جارٍ التحقق…',
+  saveKeys: 'حفظ المفاتيح', copied: 'تم النسخ', copy: 'نسخ', apply: 'تطبيق',
+  scan: 'فحص', scanHub: 'فحص Hub', loading: 'جارٍ التحميل…', compare: 'تشغيل المقارنة',
+  allTaskTypes: 'كل أنواع المهام', useEstimate: '— استخدم تقدير البتات لكل وزن —',
+  enginePicks: 'تلقائي (يختار المحرك)', savedRigs: '— الأجهزة المحفوظة —',
+};
+const isAr = () => LANG === 'ar';
+const tx = (english, arabic) => isAr() ? (arabic || AR[english] || english) : english;
+function applyLanguage() {
+  const root = document.documentElement;
+  root.lang = isAr() ? 'ar' : 'en';
+  root.dir = isAr() ? 'rtl' : 'ltr';
+  document.body.classList.toggle('lang-ar', isAr());
+  document.title = isAr() ? 'بودفِت — هل يعمل هذا النموذج على عتادي؟' : 'podfit — will this model run on my GPUs?';
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(node => {
+    const p = node.parentElement;
+    if (!p || ['SCRIPT', 'STYLE', 'CODE', 'PRE'].includes(p.tagName)) return;
+    const raw = node.nodeValue;
+    const key = raw.trim();
+    if (!key || !AR[key]) return;
+    if (!node.__podfitEn) node.__podfitEn = raw;
+    node.nodeValue = raw.replace(key, isAr() ? AR[key] : node.__podfitEn.trim());
+  });
+  document.querySelectorAll('[placeholder],[title]').forEach(el => {
+    ['placeholder', 'title'].forEach(attr => {
+      const value = el.getAttribute(attr);
+      if (!value) return;
+      if (!el.dataset['en' + attr]) el.dataset['en' + attr] = value;
+      const original = el.dataset['en' + attr];
+      el.setAttribute(attr, isAr() ? (AR[original] || original) : original);
+    });
+  });
+  const btn = $('#btn-language');
+  if (btn) { btn.textContent = isAr() ? 'English' : 'العربية'; btn.title = isAr() ? 'Switch to English' : 'التبديل إلى العربية'; }
+  const staticCopy = {
+    '#answer-placeholder .ph-sub': [
+      'podfit reads the real config.json and safetensors parameter counts from HuggingFace, then computes weights, KV cache, activations and framework overhead against the hardware you describe.',
+      'يقرأ podfit ملف config.json الحقيقي وعدد معاملات safetensors من HuggingFace، ثم يحسب الأوزان وذاكرة KV والأنشطة وزيادة الإطار مقابل العتاد الذي تصفه.'
+    ],
+    '#answer-placeholder .prompt-line': ['> awaiting input_', '> بانتظار الإدخال_'],
+    '#keys-panel .setup-grid > .card:nth-child(1) .gpu-note': [
+      `Used from your browser only, instead of this server's key. Stored in this browser's local storage on this device — never saved server-side. <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener">Get a token ↗</a>`,
+      'يُستخدم من متصفحك فقط بدلاً من مفتاح هذا الخادم. يُحفظ في التخزين المحلي لهذا المتصفح ولا يُحفظ في الخادم. <a href="https://huggingface.co/settings/tokens" target="_blank" rel="noopener">احصل على رمز ↗</a>'
+    ],
+    '#keys-panel .setup-grid > .card:nth-child(2) .gpu-note': [
+      `Used from your browser only, instead of this server's key. Stored in this browser's local storage on this device — never saved server-side. <a href="https://artificialanalysis.ai/" target="_blank" rel="noopener">Get a key ↗</a>`,
+      'يُستخدم من متصفحك فقط بدلاً من مفتاح هذا الخادم. يُحفظ في التخزين المحلي لهذا المتصفح ولا يُحفظ في الخادم. <a href="https://artificialanalysis.ai/" target="_blank" rel="noopener">احصل على مفتاح ↗</a>'
+    ]
+  };
+  Object.entries(staticCopy).forEach(([sel, copies]) => {
+    const el = $(sel); if (el) el.innerHTML = isAr() ? copies[1] : copies[0];
+  });
+}
+
 /* ------------------------------------------------------------------ utils */
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g,
   c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -131,24 +229,25 @@ async function loadAvatars(ids, then) {
 /* ------------------------------------------------------------------ boot */
 function applyKeyStatus(cat) {
   const hasHf = !!getKey(KEY_HF), hasAa = !!getKey(KEY_AA);
-  $('#hf-status').textContent = 'HF ' + (cat.hf_token ? '· token set' : '· anonymous');
-  $('#hf-status').title = cat.hf_token ? 'Gated repos resolve.'
-    : 'No HF token — gated repos will not resolve.';
+  $('#hf-status').textContent = 'HF ' + (cat.hf_token ? tx('· token set', '· تم ضبط الرمز') : tx('· anonymous', '· مجهول'));
+  $('#hf-status').title = cat.hf_token ? tx('Gated repos resolve.', 'يمكن الوصول إلى المستودعات المقيدة.')
+    : tx('No HF token — gated repos will not resolve.', 'لا يوجد رمز HF — لن تُحل المستودعات المقيدة.');
   const aa = cat.bench && cat.bench.artificial_analysis.configured;
-  $('#aa-status').textContent = 'AA ' + (aa ? '· on' : '· off');
-  $('#aa-status').title = aa ? 'Artificial Analysis scores are available.'
-    : 'No AA key — only the archived HF leaderboard supplies scores.';
+  $('#aa-status').textContent = 'AA ' + (aa ? tx('· on', '· نشط') : tx('· off', '· متوقف'));
+  $('#aa-status').title = aa ? tx('Artificial Analysis scores are available.', 'درجات Artificial Analysis متاحة.')
+    : tx('No AA key — only the archived HF leaderboard supplies scores.', 'لا يوجد مفتاح AA — يوفّر جدول HF المؤرشف الدرجات فقط.');
   $('#key_hf_status').textContent = hasHf
-    ? (cat.hf_token ? 'Your personal token is active.' : 'Saved, but not recognized — double-check it.')
-    : (cat.hf_token ? 'No personal token saved — using the server’s token.'
-                    : 'No token — gated repos will not resolve.');
+    ? (cat.hf_token ? tx('Your personal token is active.', 'رمزك الشخصي نشط.') : tx('Saved, but not recognized — double-check it.', 'حُفظ، لكنه غير معروف — راجعه.'))
+    : (cat.hf_token ? tx('No personal token saved — using the server’s token.', 'لا يوجد رمز شخصي محفوظ — يُستخدم رمز الخادم.')
+                    : tx('No token — gated repos will not resolve.', 'لا يوجد رمز — لن تُحل المستودعات المقيدة.'));
   $('#key_aa_status').textContent = hasAa
-    ? (aa ? 'Your personal key is active.' : 'Saved, but not recognized — double-check it.')
-    : (aa ? 'No personal key saved — using the server’s key.'
-          : 'No key — only the archived HF leaderboard supplies scores.');
+    ? (aa ? tx('Your personal key is active.', 'مفتاحك الشخصي نشط.') : tx('Saved, but not recognized — double-check it.', 'حُفظ، لكنه غير معروف — راجعه.'))
+    : (aa ? tx('No personal key saved — using the server’s key.', 'لا يوجد مفتاح شخصي محفوظ — يُستخدم مفتاح الخادم.')
+          : tx('No key — only the archived HF leaderboard supplies scores.', 'لا يوجد مفتاح — يوفّر جدول HF المؤرشف الدرجات فقط.'));
 }
 
 (async function boot() {
+  applyLanguage();
   $('#key_hf').value = getKey(KEY_HF);
   $('#key_aa').value = getKey(KEY_AA);
   CAT = await api('/api/catalog');
@@ -162,7 +261,7 @@ function applyKeyStatus(cat) {
   fill('#pp', [0, 1, 2, 4, 8].map(n => [n, n ? String(n) : 'auto']), 0);
   FAMILIES = (await api('/api/gpu-families')).families;
   const at = await api('/api/attention');
-  $('#attention').innerHTML = '<option value="auto">auto (engine picks)</option>' +
+  $('#attention').innerHTML = `<option value="auto">${tx('auto (engine picks)', i18n.enginePicks)}</option>` +
     at.backends.map(b => `<option value="${esc(b.key)}">${esc(b.label)}</option>`).join('');
 
   syncEngine();
@@ -176,7 +275,7 @@ function applyKeyStatus(cat) {
     SRC = 'aa';
     $$('#src-toggle button').forEach(x => x.classList.toggle('on', x.dataset.src === 'aa'));
     $$('.filters')[0].classList.add('hidden');
-    $('#q').placeholder = 'Filter Artificial Analysis models — qwen, glm, deepseek…';
+    $('#q').placeholder = tx('Filter Artificial Analysis models — qwen, glm, deepseek…');
   }
   search();
 
@@ -188,7 +287,7 @@ function applyKeyStatus(cat) {
 
 function fill(sel, pairs, val) {
   const el = $(sel);
-  const keep = sel === '#pipeline' ? '<option value="">All task types</option>' : '';
+  const keep = sel === '#pipeline' ? `<option value="">${tx('All task types', i18n.allTaskTypes)}</option>` : '';
   el.innerHTML = keep + pairs.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join('');
   if (val !== undefined) el.value = val;
 }
@@ -219,6 +318,11 @@ function familyKeyFor(g) {
 
 /* ------------------------------------------------------------------ wiring */
 function wire() {
+  $('#btn-language').addEventListener('click', () => {
+    LANG = isAr() ? 'en' : 'ar';
+    try { localStorage.setItem(LANG_KEY, LANG); } catch (e) { /* storage unavailable */ }
+    location.reload();
+  });
   $('#tabs').addEventListener('click', e => {
     const b = e.target.closest('.tab'); if (b && b.dataset.view) switchView(b.dataset.view);
   });
@@ -231,12 +335,12 @@ function wire() {
   $('#keys-save').addEventListener('click', async () => {
     setKey(KEY_HF, $('#key_hf').value.trim());
     setKey(KEY_AA, $('#key_aa').value.trim());
-    $('#keys-save').textContent = 'Checking…';
+    $('#keys-save').textContent = tx('Checking…', i18n.checking);
     try {
       CAT = await api('/api/catalog');
       applyKeyStatus(CAT);
     } finally {
-      $('#keys-save').textContent = 'Save keys';
+      $('#keys-save').textContent = tx('Save keys', i18n.saveKeys);
     }
   });
   $('#keys-clear').addEventListener('click', async () => {
@@ -252,8 +356,8 @@ function wire() {
     SRC = b.dataset.src;
     $$('#src-toggle button').forEach(x => x.classList.toggle('on', x.dataset.src === SRC));
     $('#q').placeholder = SRC === 'aa'
-      ? 'Filter Artificial Analysis models — qwen, glm, deepseek…'
-      : 'Search HuggingFace — qwen3, deepseek, gemma…';
+      ? tx('Filter Artificial Analysis models — qwen, glm, deepseek…')
+      : tx('Search HuggingFace — qwen3, deepseek, gemma…');
     $$('.filters')[0].classList.toggle('hidden', SRC === 'aa');
     search();
   });
@@ -293,7 +397,7 @@ function wire() {
   $('#btn-refresh').addEventListener('click', async () => {
     const n = (await api('/api/cache/clear', { method: 'POST' })).cleared;
     $('#btn-refresh').textContent = `Cleared ${n}`;
-    setTimeout(() => $('#btn-refresh').textContent = 'Refresh data', 1600);
+    setTimeout(() => $('#btn-refresh').textContent = tx('Refresh data'), 1600);
     if (MODEL) selectModel(MODEL.id, true);
     search();
   });
@@ -353,7 +457,7 @@ function syncGguf() {
   const files = (MODEL && MODEL.gguf_files) || [];
   $('#gguf-wrap').classList.toggle('hidden', !(isG && files.length));
   if (isG && files.length) {
-    $('#gguf_file').innerHTML = '<option value="">— use the bits-per-weight estimate —</option>' +
+    $('#gguf_file').innerHTML = `<option value="">${tx('— use the bits-per-weight estimate —', i18n.useEstimate)}</option>` +
       files.map(f => `<option value="${esc(f.path)}|${f.size}">${esc(f.path)} (${fmtBytes(f.size)})</option>`).join('');
   }
 }
@@ -399,7 +503,7 @@ function switchView(v) {
 }
 function openSetup(on) {
   $('#setup-panel').classList.toggle('hidden', !on);
-  $('#btn-setup-label').textContent = on ? 'Done' : 'Change setup';
+  $('#btn-setup-label').textContent = on ? tx('Done') : tx('Change setup');
   if (on && VIEW !== 'size') switchView('size');
 }
 
@@ -440,12 +544,12 @@ function renderSetupBar() {
 async function search() {
   if (SRC === 'aa') return searchAA();
   const box = $('#results');
-  box.innerHTML = '<div class="row"><span class="spin"></span>&nbsp;<span class="row-meta">searching…</span></div>';
+  box.innerHTML = `<div class="row"><span class="spin"></span>&nbsp;<span class="row-meta">${tx('searching…', i18n.searching)}</span></div>`;
   try {
     const { results } = await api('/api/models/search?' + new URLSearchParams({
       q: $('#q').value.trim(), pipeline: $('#pipeline').value, sort: $('#sort').value, limit: 40
     }));
-    if (!results.length) { box.innerHTML = '<div class="row"><span class="row-meta">No models matched.</span></div>'; return; }
+    if (!results.length) { box.innerHTML = `<div class="row"><span class="row-meta">${tx('No models matched.', i18n.noModels)}</span></div>`; return; }
     box.innerHTML = results.map(m => `
       <div class="row${MODEL && MODEL.id === m.id ? ' on' : ''}" data-id="${esc(m.id)}">
         ${logo(m.id)}
@@ -470,11 +574,11 @@ async function search() {
 
 async function searchAA() {
   const box = $('#results');
-  box.innerHTML = '<div class="row"><span class="spin"></span>&nbsp;<span class="row-meta">ranking by intelligence…</span></div>';
+  box.innerHTML = `<div class="row"><span class="spin"></span>&nbsp;<span class="row-meta">${tx('ranking by intelligence…', i18n.ranking)}</span></div>`;
   try {
     const { results } = await api('/api/aa/search?' + new URLSearchParams({
       q: $('#q').value.trim(), limit: 60 }));
-    if (!results.length) { box.innerHTML = '<div class="row"><span class="row-meta">Nothing matched.</span></div>'; return; }
+    if (!results.length) { box.innerHTML = `<div class="row"><span class="row-meta">${tx('Nothing matched.', i18n.nothing)}</span></div>`; return; }
     // A picker should lead with what you can actually run. API-only models stay
     // visible as a count so the ranking is not silently edited.
     const open = results.filter(r => r.repo);
@@ -501,7 +605,7 @@ async function searchAA() {
 async function selectModel(id, refresh) {
   $$('#results .row').forEach(r => r.classList.toggle('on', r.dataset.id === id));
   setHash({ model: id });
-  $('#model-col').innerHTML = '<div class="card"><span class="spin"></span> <span class="hint">reading config.json…</span></div>';
+  $('#model-col').innerHTML = `<div class="card"><span class="spin"></span> <span class="hint">${tx('reading config.json…', i18n.reading)}</span></div>`;
   try {
     MODEL = await api(`/api/models/detail?repo=${encodeURIComponent(id)}${refresh ? '&refresh=true' : ''}`);
   } catch (e) {
@@ -750,9 +854,9 @@ function renderAnswer(r) {
   const mark = { yes: ICON.tick, tight: ICON.warn, no: ICON.cross }[r.verdict];
 
   const segs = [
-    ['w', m.weights_gib, 'Weights'],
-    ['ov', m.overhead_gib, local ? 'Reserve' : 'Framework'],
-    ['act', m.activations_gib, local ? 'Compute buffer' : 'Activations'],
+    ['w', m.weights_gib, tx('Weights', 'الأوزان')],
+    ['ov', m.overhead_gib, local ? tx('Reserve', 'المساحة المحجوزة') : tx('Framework', 'الإطار')],
+    ['act', m.activations_gib, local ? tx('Compute buffer', 'ذاكرة الحوسبة') : tx('Activations', 'الأنشطة')],
     ['cg', m.cudagraph_gib, 'CUDA graphs'],
     ['kv', m.kv_needed_gib, 'KV cache'],
   ].filter(s => s[1] > 0.005);
@@ -765,8 +869,8 @@ function renderAnswer(r) {
     bar = `<div class="overbar">
       <div class="zone" style="left:${budgetPct}%"></div>
       <div class="mark" style="left:${budgetPct}%"></div>
-      <div class="lbl-l" style="left:${budgetPct}%">${fmtGiB(m.budget_gib)} budget</div>
-      <div class="lbl-r" style="left:${budgetPct}%">${fmtGiB(required - m.budget_gib)} over</div>
+      <div class="lbl-l" style="left:${budgetPct}%">${fmtGiB(m.budget_gib)} ${tx('budget', 'الميزانية')}</div>
+      <div class="lbl-r" style="left:${budgetPct}%">${fmtGiB(required - m.budget_gib)} ${tx('over', 'زيادة')}</div>
       <div class="bar">${segs.map(([c, v]) => `<div class="seg ${c}" style="width:${100 * v / required}%"></div>`).join('')}</div>
     </div>`;
   } else {
@@ -778,21 +882,21 @@ function renderAnswer(r) {
       <div class="seg free" style="width:${100 * free / total}%"></div>
       ${reserve > 0.01 ? `<div class="seg res" style="width:${100 * reserve / total}%"></div>` : ''}
     </div>`;
-    segs.push(['free', free, 'Free']);
+    segs.push(['free', free, tx('Free', 'متاح')]);
   }
 
   const hl = [];
-  hl.push(['max context', fmtBig(m.max_context_single), 'one stream',
+  hl.push([tx('max context', 'أقصى سياق'), fmtBig(m.max_context_single), tx('one stream', 'تدفق واحد'),
     m.max_context_single >= want.context_len ? '' : 'bad']);
-  hl.push(['streams', fmtInt(m.max_concurrent_at_ctx), `at ${fmtBig(want.context_len)} context`,
+  hl.push([tx('streams', 'التدفقات'), fmtInt(m.max_concurrent_at_ctx), `${tx('at', 'عند')} ${fmtBig(want.context_len)} ${tx('context', 'سياق')}`,
     m.max_concurrent_at_ctx >= want.concurrency ? '' : 'bad']);
-  if (local) hl.push(['GPU layers', `${m.gpu_layers}/${m.total_layers}`,
-    m.gpu_layers >= m.total_layers ? 'fully offloaded' : 'partial offload',
+  if (local) hl.push([tx('GPU layers', 'طبقات GPU'), `${m.gpu_layers}/${m.total_layers}`,
+    m.gpu_layers >= m.total_layers ? tx('fully offloaded', 'نقل كامل') : tx('partial offload', 'نقل جزئي'),
     m.gpu_layers >= m.total_layers ? '' : 'warn']);
   if (p.available) {
-    hl.push(['decode', fmtTok(p.decode_tps_single) + '<small> tok/s</small>', 'single stream', '']);
-    hl.push(['first token', (p.ttft_s < 1 ? Math.round(p.ttft_s * 1000) + '<small> ms</small>'
-      : p.ttft_s.toFixed(1) + '<small> s</small>'), 'at full context', '']);
+    hl.push([tx('decode', 'التوليد'), fmtTok(p.decode_tps_single) + '<small> tok/s</small>', tx('single stream', 'تدفق واحد'), '']);
+    hl.push([tx('first token', 'أول رمز'), (p.ttft_s < 1 ? Math.round(p.ttft_s * 1000) + '<small> ms</small>'
+      : p.ttft_s.toFixed(1) + '<small> s</small>'), tx('at full context', 'عند السياق الكامل'), '']);
   }
 
   const by = { blocker: [], warn: [], info: [] };
@@ -814,9 +918,9 @@ function renderAnswer(r) {
         </div>
         ${over
           ? `<div class="v-right"><div class="v-over">${fmtGiB(required - m.budget_gib)}</div>
-             <div class="v-over-lbl">over budget, per GPU</div></div>`
+             <div class="v-over-lbl">${tx('over budget, per GPU', 'فوق الميزانية، لكل GPU')}</div></div>`
           : `<div class="v-par"><b>${r.weights.bpw.toFixed(2)} bits/weight</b>${
-              r.parallel.auto ? '<span>auto-sized</span>' : ''}</div>`}
+              r.parallel.auto ? `<span>${tx('auto-sized', 'بحجم تلقائي')}</span>` : ''}</div>`}
       </div>
 
       <div class="headline">
@@ -825,9 +929,9 @@ function renderAnswer(r) {
 
       <div class="section">
         <div class="sec-head">
-          <h3>${over ? 'What it needs vs. what this GPU has' : (local ? 'Memory across ' + r.parallel.total_gpus + ' GPUs' : 'Memory per GPU')}</h3>
-          <span class="meta">${over ? fmtGiB(required) + ' required' :
-            `${fmtGiB(m.vram_gib)} card · ${fmtGiB(m.budget_gib)} budget at ${Math.round(m.util * 100)}%`}</span>
+          <h3>${over ? tx('What it needs vs. what this GPU has', 'ما يحتاجه مقابل ما لدى GPU') : (local ? `${tx('Memory across', 'الذاكرة عبر')} ${r.parallel.total_gpus} GPU` : tx('Memory per GPU', 'الذاكرة لكل GPU'))}</h3>
+          <span class="meta">${over ? fmtGiB(required) + ' ' + tx('required', 'مطلوب') :
+            `${fmtGiB(m.vram_gib)} ${tx('card', 'بطاقة')} · ${fmtGiB(m.budget_gib)} ${tx('budget', 'ميزانية')} ${tx('at', 'عند')} ${Math.round(m.util * 100)}%`}</span>
         </div>
         ${bar}
         <div class="legend">
@@ -839,8 +943,8 @@ function renderAnswer(r) {
     </div>
 
     ${sug.length ? `<div class="card">
-      <div class="sec-head"><h3>What would make it fit</h3>
-        <span class="meta">each option re-sized against your hardware</span></div>
+      <div class="sec-head"><h3>${tx('What would make it fit', 'ما الذي يجعله مناسباً')}</h3>
+        <span class="meta">${tx('each option re-sized against your hardware', 'أُعيد حساب كل خيار مقابل عتادك')}</span></div>
       ${sug.map((s, i) => `
         <div class="fix ${i === 0 ? 'best' : ''}">
           ${ICON.check}
@@ -852,18 +956,18 @@ function renderAnswer(r) {
               <span class="mono">${fmtInt(s.max_context)}</span> tokens</div>
             ${s.note ? `<div class="fix-note">${esc(s.note)}</div>` : ''}
           </div>
-          <button class="${i === 0 ? 'primary' : 'ghost'}" data-fix="${i}">Apply</button>
+          <button class="${i === 0 ? 'primary' : 'ghost'}" data-fix="${i}">${tx('Apply', i18n.apply)}</button>
         </div>`).join('')}
     </div>` : ''}
 
     <div class="card">
-      <div class="sec-head"><h3>Worth knowing</h3>
-        <span class="meta">${by.blocker.length} blocker${by.blocker.length === 1 ? '' : 's'} ·
-          ${by.warn.length} warning${by.warn.length === 1 ? '' : 's'} · ${by.info.length} note${by.info.length === 1 ? '' : 's'}</span></div>
+      <div class="sec-head"><h3>${tx('Worth knowing', 'معلومات مهمة')}</h3>
+        <span class="meta">${by.blocker.length} ${tx('blocker', 'مانع')} ·
+          ${by.warn.length} ${tx('warning', 'تحذير')} · ${by.info.length} ${tx('note', 'ملاحظة')}</span></div>
       ${shown.length ? shown.map(f => `
         <div class="finding f-${f.level}">
           <div><div class="f-title">${esc(f.title)}</div><div class="f-detail">${esc(f.detail)}</div></div>
-        </div>`).join('') : '<p class="hint">Nothing blocking or surprising here.</p>'}
+        </div>`).join('') : `<p class="hint">${tx('Nothing blocking or surprising here.', 'لا توجد موانع أو مفاجآت هنا.')}</p>`}
       ${by.info.length ? `<div class="fold" id="fold-info">
         <span class="lbl"><span class="dot info"></span>${by.info.length} note${by.info.length === 1 ? '' : 's'} on
           ${esc(tagWords(by.info.map(f => f.tag)))}</span>${ICON.down}</div>
@@ -875,31 +979,31 @@ function renderAnswer(r) {
 
     <div class="rows" id="drows">
       <div class="drow" data-body="b-attn">
-        ${ICON.bolt}<div class="t">Attention backend</div>
+        ${ICON.bolt}<div class="t">${tx('Attention backend', 'خلفية الانتباه')}</div>
         <div class="v">${r.attention && r.attention.chosen
           ? `<span class="dot" style="background:var(--${attnTone(r)})"></span>${esc(r.attention.chosen.label)}`
-          : '<span class="dot" style="background:var(--bad)"></span>none available'}</div>${ICON.chev}
+          : `<span class="dot" style="background:var(--bad)"></span>${tx('none available', 'لا يتوفر شيء')}`}</div>${ICON.chev}
       </div>
       <div class="dbody pad hidden" id="b-attn">${attentionBlock(r.attention)}</div>
 
       <div class="drow" data-body="b-fam">
-        ${ICON.gpu}<div class="t">GPU architecture</div>
+        ${ICON.gpu}<div class="t">${tx('GPU architecture', 'معمارية GPU')}</div>
         <div class="v" id="fam-row-value"><span class="spin"></span></div>${ICON.chev}
       </div>
-      <div class="dbody pad hidden" id="b-fam"><span class="spin"></span> <span class="hint">checking architectures…</span></div>
+      <div class="dbody pad hidden" id="b-fam"><span class="spin"></span> <span class="hint">${tx('checking architectures…', 'جارٍ فحص المعماريات…')}</span></div>
 
       <div class="drow" data-body="b-cmd">
-        ${ICON.term}<div class="t">Launch command</div>
+        ${ICON.term}<div class="t">${tx('Launch command', 'أمر التشغيل')}</div>
         <div class="v mono" style="max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.command.split('\n')[0])}</div>
-        <button class="ghost sm" id="btn-copy">Copy</button>${ICON.chev}
+        <button class="ghost sm" id="btn-copy">${tx('Copy', i18n.copy)}</button>${ICON.chev}
       </div>
       <div class="dbody pad hidden" id="b-cmd"><pre class="cmd">${esc(r.command)}</pre></div>
 
       <div class="drow" data-body="b-cmp">
-        ${ICON.swap}<div class="t">Compare against other GPUs</div>
-        <div class="v">9 cards</div>${ICON.chev}
+        ${ICON.swap}<div class="t">${tx('Compare against other GPUs', 'قارن مع وحدات GPU أخرى')}</div>
+        <div class="v">9 ${tx('cards', 'بطاقات')}</div>${ICON.chev}
       </div>
-      <div class="dbody pad hidden" id="b-cmp"><div id="compare-out"><button class="ghost" id="btn-compare">Run comparison</button></div></div>
+      <div class="dbody pad hidden" id="b-cmp"><div id="compare-out"><button class="ghost" id="btn-compare">${tx('Run comparison', i18n.compare)}</button></div></div>
     </div>`;
 
   $$('#answer-col [data-fix]').forEach(b =>
@@ -925,7 +1029,7 @@ function renderAnswer(r) {
   $('#btn-copy').addEventListener('click', e => {
     e.stopPropagation();
     navigator.clipboard.writeText(r.command);
-    e.target.textContent = 'Copied'; setTimeout(() => e.target.textContent = 'Copy', 1400);
+    e.target.textContent = tx('Copied', i18n.copied); setTimeout(() => e.target.textContent = tx('Copy', i18n.copy), 1400);
   });
   $('#btn-compare').addEventListener('click', runCompare);
 }
@@ -939,18 +1043,18 @@ function attnTone(r) {
 }
 
 function attentionBlock(a) {
-  if (!a) return '<p class="hint">not evaluated</p>';
+  if (!a) return `<p class="hint">${tx('not evaluated', 'لم يُقيَّم')}</p>`;
   const n = a.needs;
   const needs = [n.mla ? 'multi-head latent attention' : null, n.swa ? 'sliding window' : null,
     n.fp8_kv ? 'FP8/INT8 KV cache' : null, n.head_dim ? `head_dim ${n.head_dim}` : null].filter(Boolean);
   const mk = { ok: '●', warn: '◐', no: '○' };
-  return `<div class="needs"><span class="hint">This model needs:</span>
-      ${needs.map(x => `<span class="tag">${esc(x)}</span>`).join('') || '<span class="tag">standard attention</span>'}</div>
+  return `<div class="needs"><span class="hint">${tx('This model needs:', 'يحتاج هذا النموذج إلى:')}</span>
+      ${needs.map(x => `<span class="tag">${esc(x)}</span>`).join('') || `<span class="tag">${tx('standard attention', 'انتباه قياسي')}</span>`}</div>
     ${a.candidates.map(c => `
       <div class="attn ${c.status}${a.chosen && a.chosen.key === c.key ? ' chosen' : ''}">
         <span style="color:var(--${c.status === 'ok' ? 'ok' : c.status === 'warn' ? 'warn' : 'faint'})">${mk[c.status]}</span>
         <div style="min-width:0">
-          <div class="attn-name">${esc(c.label)}${a.chosen && a.chosen.key === c.key ? ' <span class="tag blue">selected</span>' : ''}</div>
+          <div class="attn-name">${esc(c.label)}${a.chosen && a.chosen.key === c.key ? ` <span class="tag blue">${tx('selected', 'محدد')}</span>` : ''}</div>
           <div class="attn-why">${esc(c.reason || c.note)}</div>
         </div>
       </div>`).join('')}`;
@@ -958,7 +1062,7 @@ function attentionBlock(a) {
 
 async function runCompare() {
   const out = $('#compare-out');
-  out.innerHTML = '<span class="spin"></span> <span class="hint">sizing across GPUs…</span>';
+  out.innerHTML = `<span class="spin"></span> <span class="hint">${tx('sizing across GPUs…', 'جارٍ الحساب عبر وحدات GPU…')}</span>`;
   const ids = ['l20', 'l40s', 'h20', 'h100-sxm', 'h200-sxm', 'a100-80', 'b200', 'rtx-4090', 'mi300x'];
   const cur = $('#gpu').value;
   if (!ids.includes(cur)) ids.unshift(cur);
@@ -967,11 +1071,11 @@ async function runCompare() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ repo: MODEL.id, model: MODEL, hardware: hardware(), runtime: runtime() }),
     });
-    out.innerHTML = `<table><thead><tr><th>GPU</th><th>Fits</th><th class="mono">TP×PP</th>
-        <th class="mono">Weights</th><th class="mono">KV free</th><th class="mono">Max ctx</th><th class="mono">Decode</th></tr></thead><tbody>
+    out.innerHTML = `<table><thead><tr><th>GPU</th><th>${tx('Fits', 'الملاءمة')}</th><th class="mono">TP×PP</th>
+        <th class="mono">${tx('Weights', 'الأوزان')}</th><th class="mono">KV ${tx('free', 'متاح')}</th><th class="mono">${tx('Max ctx', 'أقصى سياق')}</th><th class="mono">${tx('Decode', 'التوليد')}</th></tr></thead><tbody>
       ${results.map(x => `<tr${x.gpu_id === cur ? ' style="background:var(--acc-bg)"' : ''}>
         <td>${esc(x.name)}</td>
-        <td><span class="v-chip ${x.verdict}">${x.verdict === 'yes' ? 'fits' : x.verdict === 'tight' ? 'tight' : 'no'}</span></td>
+        <td><span class="v-chip ${x.verdict}">${x.verdict === 'yes' ? tx('fits', 'مناسب') : x.verdict === 'tight' ? tx('tight', 'محدود') : tx('no', 'لا')}</span></td>
         <td class="mono">${x.parallel.tp}×${x.parallel.pp}</td>
         <td class="mono">${fmtGiB(x.memory.weights_gib)}</td>
         <td class="mono">${fmtGiB(Math.max(x.memory.kv_available_gib, 0))}</td>
@@ -984,8 +1088,8 @@ async function runCompare() {
 async function loadRigs() {
   RIGS = (await api('/api/rigs')).rigs;
   const sel = $('#rig-select'), keep = sel.value;
-  sel.innerHTML = '<option value="">— saved rigs —</option>' +
-    RIGS.map(r => `<option value="${esc(r.id)}">${esc(r.name)}${r.builtin ? ' (detected)' : ''}</option>`).join('');
+  sel.innerHTML = `<option value="">${tx('— saved rigs —', i18n.savedRigs)}</option>` +
+    RIGS.map(r => `<option value="${esc(r.id)}">${esc(r.name)}${r.builtin ? ` (${tx('detected', 'مكتشف')})` : ''}</option>`).join('');
   if (RIGS.some(r => r.id === keep)) sel.value = keep;
   else if (RIGS.length && !keep) { sel.value = RIGS[0].id; applyRig(); }
 }
@@ -1011,7 +1115,7 @@ function applyRig() {
 async function saveRig() {
   const existing = RIGS.find(r => r.id === $('#rig-select').value);
   const g = gpuOf($('#gpu').value) || { name: 'GPU' };
-  const name = prompt('Name this rig', existing && !existing.builtin ? existing.name
+  const name = prompt(tx('Name this rig', 'سمِّ هذا الجهاز'), existing && !existing.builtin ? existing.name
     : `${$('#gpus_per_node').value}× ${g.name}`);
   if (!name) return;
   const reuse = existing && !existing.builtin && existing.name === name;
@@ -1023,7 +1127,7 @@ async function saveRig() {
 }
 async function deleteRig() {
   const r = RIGS.find(x => x.id === $('#rig-select').value);
-  if (!r || !confirm(`Delete rig "${r.name}"?`)) return;
+  if (!r || !confirm(isAr() ? `حذف الجهاز "${r.name}"؟` : `Delete rig "${r.name}"?`)) return;
   await api(`/api/rigs/${r.id}`, { method: 'DELETE' });
   $('#rig-select').value = '';
   await loadRigs();
@@ -1036,26 +1140,25 @@ function renderRecommendView() {
   $('#view-recommend').innerHTML = `
     <div class="view-head">
       <div>
-        <h2>Best models for ${total} × ${esc(g.name)}</h2>
-        <p>Sized against your hardware at ${fmtBig(+$('#context_len').value || 8192)} context,
-          strongest first.</p>
+        <h2>${tx('Best models for', 'أفضل النماذج لـ')} ${total} × ${esc(g.name)}</h2>
+        <p>${tx('Sized against your hardware at', 'حُسبت مقابل عتادك عند')} ${fmtBig(+$('#context_len').value || 8192)} ${tx('context, strongest first.', 'سياق، الأقوى أولاً.')}</p>
       </div>
       <div class="view-controls">
         <select id="rec-pipe">${CAT.pipelines.slice(0, 6).map(p =>
           `<option value="${esc(p.key)}">${esc(p.label)}</option>`).join('')}</select>
         <select id="rec-sort">
-          <option value="aa">Artificial Analysis — by intelligence</option>
-          <option value="trendingScore">Trending on the Hub</option>
-          <option value="downloads">Most downloaded</option>
-          <option value="likes">Most liked</option></select>
+          <option value="aa">Artificial Analysis — ${tx('by intelligence', 'حسب الذكاء')}</option>
+          <option value="trendingScore">${tx('Trending on the Hub', 'الأكثر رواجاً على Hub')}</option>
+          <option value="downloads">${tx('Most downloaded', 'الأكثر تحميلاً')}</option>
+          <option value="likes">${tx('Most liked', 'الأكثر إعجاباً')}</option></select>
         <select id="rec-pool">
-          <option value="20">20 models</option><option value="30" selected>30 models</option>
-          <option value="50">50 models</option></select>
-        <button class="primary" id="rec-go">Scan</button>
+          <option value="20">20 ${tx('models', 'نموذجاً')}</option><option value="30" selected>30 ${tx('models', 'نموذجاً')}</option>
+          <option value="50">50 ${tx('models', 'نموذجاً')}</option></select>
+        <button class="primary" id="rec-go">${tx('Scan', i18n.scan)}</button>
       </div>
     </div>
     <div class="banner" id="rec-banner"></div>
-    <div id="rec-out"><button class="primary" id="rec-start">Scan the Hub</button></div>`;
+    <div id="rec-out"><button class="primary" id="rec-start">${tx('Scan the Hub', i18n.scanHub)}</button></div>`;
   const syncRecSrc = () => {
     const aa = $('#rec-sort').value === 'aa';
     $('#rec-pipe').classList.toggle('hidden', aa);
@@ -1158,18 +1261,17 @@ async function runRecommend() {
 /* ------------------------------------------------------------------ arch view */
 async function renderArchView() {
   const v = $('#view-arch');
-  v.innerHTML = '<p class="hint"><span class="spin"></span> loading…</p>';
+  v.innerHTML = `<p class="hint"><span class="spin"></span> ${tx('loading…', i18n.loading)}</p>`;
   const [{ rows }, fam] = await Promise.all([api('/api/arch'), api('/api/gpu-families')]);
   const cell = k => `<span class="status-${k === '?' ? 'p' : k}">${
     { y: '● yes', p: '◐ partial', n: '○ no', '?': '· unknown' }[k]}</span>`;
   v.innerHTML = `
     <div class="view-head">
-      <div><h2>GPU architectures</h2>
-        <p>What each family can do. Compute capability is what kernels gate on;
-          the model table below says which families each architecture can serve.</p></div>
+      <div><h2>${tx('GPU architectures', 'معماريات GPU')}</h2>
+        <p>${tx('What each family can do. Compute capability is what kernels gate on; the model table below says which families each architecture can serve.', 'ما يمكن لكل عائلة فعله. قدرة الحوسبة هي ما تعتمد عليه kernels؛ ويبين الجدول أدناه العائلات التي يمكن لكل معمارية خدمتها.')}</p></div>
     </div>
     <div class="rows" style="margin-bottom:28px"><table><thead><tr>
-      <th>Family</th><th class="mono">Target</th><th>Cards</th><th>Supports</th><th>Lacks</th>
+      <th>${tx('Family', 'العائلة')}</th><th class="mono">${tx('Target', 'الهدف')}</th><th>${tx('Cards', 'البطاقات')}</th><th>${tx('Supports', 'يدعم')}</th><th>${tx('Lacks', 'لا يدعم')}</th>
       </tr></thead><tbody>
       ${fam.families.map(f => `<tr>
         <td><b>${esc(f.name)}</b></td>
@@ -1181,14 +1283,13 @@ async function renderArchView() {
       </tbody></table></div>
 
     <div class="view-head">
-      <div><h2>Model families</h2>
-        <p>${rows.length} model families. <b>min sm</b> is the lowest CUDA compute capability whose
-          kernels cover the family; traits drive the memory model.</p></div>
-      <div class="view-controls"><input type="search" id="arch-q" placeholder="Filter…" style="width:240px"></div>
+      <div><h2>${tx('Model families', 'عائلات النماذج')}</h2>
+        <p>${rows.length} ${tx('model families.', 'عائلة نموذج.')} <b>min sm</b> ${tx('is the lowest CUDA compute capability whose kernels cover the family; traits drive the memory model.', 'هي أقل قدرة CUDA تغطي kernels الخاصة بالعائلة؛ والخصائص تقود نموذج الذاكرة.')}</p></div>
+      <div class="view-controls"><input type="search" id="arch-q" placeholder="${tx('Filter…')}" style="width:240px"></div>
     </div>
     <div class="rows"><table id="arch-table"><thead><tr>
-      <th>Family</th><th class="mono">model_type</th><th>vLLM</th><th>SGLang</th><th>llama.cpp</th>
-      <th class="mono">min sm</th><th>Traits</th></tr></thead><tbody>
+      <th>${tx('Family', 'العائلة')}</th><th class="mono">model_type</th><th>vLLM</th><th>SGLang</th><th>llama.cpp</th>
+      <th class="mono">min sm</th><th>${tx('Traits', 'الخصائص')}</th></tr></thead><tbody>
       ${rows.map(r => `<tr data-k="${esc((r.family + ' ' + r.model_type + ' ' + r.traits.join(' ')).toLowerCase())}">
         <td>${esc(r.family)}${r.note ? ` <span class="tag" title="${esc(r.note)}">i</span>` : ''}</td>
         <td class="mono">${esc(r.model_type)}</td>
@@ -1203,7 +1304,97 @@ async function renderArchView() {
 }
 
 /* ------------------------------------------------------------------ docs */
+function renderDocsArabicView() {
+  $('#view-docs').dataset.built = '1';
+  $('#view-docs').innerHTML = `
+    <div class="view-head"><div><h2>الوثائق</h2>
+      <p>تعريف بالمشروع، مرجع العتاد، مزودو السحابة، المحركات، وطريقة المساهمة.</p></div></div>
+    <div class="docs-layout">
+      <nav class="docs-nav">
+        <a href="#docs-about">عن المشروع</a>
+        <a href="#docs-hw">مرجع العتاد</a>
+        <a href="#docs-interconnects" class="sub">الربط البيني</a>
+        <a href="#docs-apple" class="sub">Apple Silicon</a>
+        <a href="#docs-nvidia" class="sub">NVIDIA و L20</a>
+        <a href="#docs-providers">مزودو السحابة</a>
+        <a href="#docs-aws" class="sub">AWS</a>
+        <a href="#docs-azure" class="sub">Azure</a>
+        <a href="#docs-gcp" class="sub">Google Cloud</a>
+        <a href="#docs-alibaba" class="sub">Alibaba Cloud</a>
+        <a href="#docs-engines">محركات LLM</a>
+        <a href="#docs-vllm" class="sub">vLLM</a>
+        <a href="#docs-sglang" class="sub">SGLang</a>
+        <a href="#docs-llamacpp" class="sub">llama.cpp</a>
+        <a href="#docs-ollama" class="sub">Ollama</a>
+        <a href="#docs-contributing">المساهمة</a>
+      </nav>
+      <article class="docs-content">
+        <section id="docs-about">
+          <h3>عن المشروع</h3>
+          <p>يجيب <b>podfit</b> عن سؤال واحد: <b>هل يعمل هذا النموذج على عتادي، وبأي أداء؟</b>
+          اختر أي نموذج من HuggingFace، صف وحدات GPU لديك، اختر المحرك وكمّ الأوزان، ثم يحسب podfit
+          الأوزان وذاكرة KV والأنشطة وCUDA graphs والزيادة الخاصة بالإطار، ويعرض الملاءمة والسياق والتوازي وسرعة تقريبية وأمر التشغيل.</p>
+          <p>بناه عبدالرحمن الميمان، مهندس ذكاء اصطناعي وسحابة.</p>
+          <div class="docs-links">
+            <a class="ghost sm" href="https://www.abdulrahmanalmyman.dev/" target="_blank" rel="noopener">الموقع ↗</a>
+            <a class="ghost sm" href="https://www.linkedin.com/in/abdulrahmanalmyman/" target="_blank" rel="noopener">LinkedIn ↗</a>
+            <a class="ghost sm" href="https://x.com/PYTHON01100100" target="_blank" rel="noopener">X ↗</a>
+            <a class="ghost sm" href="https://github.com/PYTHON01100100" target="_blank" rel="noopener">GitHub ↗</a>
+            <a class="ghost sm" href="https://github.com/PYTHON01100100/PodFit" target="_blank" rel="noopener">مستودع المشروع ↗</a>
+            <a class="primary sm" href="https://buymeacoffee.com/AbdulrahmanAlmyman" target="_blank" rel="noopener">ادعم المشروع ↗</a>
+          </div>
+        </section>
+
+        <section id="docs-hw"><h3>مرجع العتاد</h3>
+          <p>تجمع الآلة الحاسبة سعة الذاكرة وعرض النطاق وقدرة الحوسبة ومتطلبات المحرك والربط البيني. الذاكرة تجيب عن «هل يناسب؟»، أما عرض النطاق فيقيد سرعة التوليد، وقدرة الحوسبة تقيد kernels المتاحة.</p>
+        </section>
+        <section id="docs-interconnects"><h4>NVLink و RDMA و PCIe و Ethernet</h4>
+          <p><b>NVLink / NVSwitch</b> هو أسرع ربط خاص من NVIDIA للوحدات ضمن الخادم، وهو الخيار المثالي للتوازي الموترّي TP. يصل H100/H200 SXM إلى 900 GB/s، وتصل Blackwell SXM إلى 1.8 TB/s.</p>
+          <p><b>RDMA</b> عبر InfiniBand أو RoCE مع GPUDirect RDMA هو المسار المعتاد بين الخوادم. يظل أبطأ بكثير من NVLink، لذلك يُفضّل TP داخل الخادم وPP بين الخوادم. في مجموعة Mac Studio يعرض podfit خيار <b>RDMA (Thunderbolt 5)</b>؛ تحتاج إلى llama.cpp RPC أو MLX distributed، ولا تتحد الذاكرة تلقائياً.</p>
+          <p><b>PCIe</b> مناسب لعدد محدود من البطاقات، بينما Ethernet العادي يصلح أكثر لـ Pipeline Parallel ولا يصلح عملياً لـ TP عبر الخوادم.</p>
+        </section>
+        <section id="docs-apple"><h4>Apple Silicon والذاكرة الموحّدة</h4>
+          <p>تستخدم Apple Silicon ذاكرة موحدة تشاركها CPU وGPU وNeural Engine. يحتسب podfit نحو 75% من الذاكرة المعلنة كمساحة متاحة بأمان للنموذج كي يترك حيزاً للنظام والتطبيقات.</p>
+          <p>تعمل أجهزة Max وUltra مع <b>llama.cpp (Metal)</b> أو <b>MLX</b>، لا مع vLLM أو SGLang. يضيف Ultra عرض نطاق وسعة أكبر؛ وUltraFusion لا يجعل عدة أجهزة Mac Studio جهازاً واحداً—التوزيع يحتاج runtime وشبكة فعلية.</p>
+        </section>
+        <section id="docs-nvidia"><h4>NVIDIA و L20</h4>
+          <p>رقم compute capability هو بوابة kernels الحقيقية. يحتاج FlashAttention-2 إلى sm80، ويحتاج FP8 KV إلى sm89، وتحتاج MLA إلى Hopper أو Blackwell لتحقيق أفضل مسار.</p>
+          <p><b>L20</b> بطاقة Ada بسعة 48GB وعرض نطاق 864 GB/s، صممت للاستدلال والامتثال الإقليمي. تصلح للنماذج المكمّمة وخدمات الدفعات المتوسطة، لكن ليس لديها NVLink؛ لذا يقل تحجيم TP فوق PCIe. لا تخلطها مع H20: H20 Hopper مختلفة تماماً.</p>
+        </section>
+
+        <section id="docs-providers"><h3>مزودو السحابة</h3><p>تختلف المنطقة والحصة والأسعار من وقت لآخر. استخدم أسماء عائلات الآلات أدناه كنقطة بداية ثم تحقق من المنطقة المختارة وقيود السعة والتسعير قبل التشغيل.</p></section>
+        <section id="docs-aws"><h4>AWS</h4>
+          <p><b>P5</b> يقدم H100 SXM (عادة 8 وحدات لكل خادم). <b>P5e</b> و<b>P5en</b> يقدمان H200، بينما <b>P6-B200</b> هو جيل Blackwell. AWS خيار قوي عندما تحتاج شبكة managed وشبكات EFA ومجموعات تدريب كبيرة؛ لكن الحصة والسعة الإقليمية هما القيد المعتاد.</p>
+        </section>
+        <section id="docs-azure"><h4>Microsoft Azure</h4>
+          <p>تغطي <b>ND H100 v5</b> و<b>ND H200 v5</b> Hopper. ويظهر Blackwell في عائلة <b>ND GB200 v6</b>. يناسب Azure البيئات المرتبطة بـ Entra ID وAzure ML وPrivate Link، وغالباً تحتاج طلب حصة GPU قبل إنشاء العقدة.</p>
+        </section>
+        <section id="docs-gcp"><h4>Google Cloud</h4>
+          <p><b>A3 Mega</b> (<code>a3-megagpu-8g</code>) يوفر H100، و<b>A3 Ultra</b> (<code>a3-ultragpu-8g</code>) يوفر H200، و<b>A4</b> يقدم B200. استخدم reservation أو capacity block عندما تحتاج بدءاً مؤكداً لمجموعة كبيرة.</p>
+        </section>
+        <section id="docs-alibaba"><h4>Alibaba Cloud</h4>
+          <p>العائلات الأكثر صلة: <b>GN7i</b> لـ A10، و<b>GN8is</b>/<b>GN8v</b> لـ L20 مع خيارات 1 و2 و4 و8 GPU، وخط <b>gx8sf / L20X</b> الذي يركز على الذاكرة والشبكات السريعة. تختلف الإتاحة حسب المنطقة وقد يتطلب بعض الأنواع التواصل مع المبيعات. تحقق من صفحة ECS الخاصة بمنطقتك قبل اعتماد الاسم أو السعة.</p>
+        </section>
+
+        <section id="docs-engines"><h3>محركات LLM</h3><p>يعرض podfit فقط المسارات التي يمكن للمحرك والعتاد تشغيلها فعلاً. اختر المحرك أولاً لأن نوع الأوزان ونظام التشغيل والـ kernels تختلف باختلافه.</p></section>
+        <section id="docs-vllm"><h4>vLLM</h4><p>Linux فقط. مناسب لخدمات CUDA/ROCm عالية الإنتاجية ويدعم fp16 وbf16 وfp32 وfp8 وint8 وAWQ وGPTQ وbitsandbytes وMXFP4 وNVFP4. يستخدم paged attention والتوازي الموترّي والخطي للخدمات الكبيرة.</p></section>
+        <section id="docs-sglang"><h4>SGLang</h4><p>Linux فقط. محرك خدمة سريع يدعم fp16 وbf16 وfp8 وint8 وAWQ وGPTQ وMXFP4 وNVFP4. خيار جيد عند الحاجة إلى runtime برمجي وتحسينات توجيه/ذاكرة موجهة للاستدلال.</p></section>
+        <section id="docs-llamacpp"><h4>llama.cpp</h4><p>يعمل على Linux وWindows وmacOS. يدعم GGUF وfp16، وهو المسار الأساسي للأجهزة المحلية وApple Silicon عبر Metal. يمكنه توزيع الطبقات عبر أجهزة متعددة أو عبر RPC، لكن السرعة تعتمد على الربط الفعلي بين الأجهزة.</p></section>
+        <section id="docs-ollama"><h4>Ollama</h4><p>يعمل على Linux وWindows وmacOS، ويستخدم GGUF فقط. مناسب لتجربة النماذج محلياً بواجهة بسيطة، بينما llama.cpp يمنحك تحكماً أدق في ملفات GGUF وطبقات GPU وأوامر التشغيل.</p></section>
+
+        <section id="docs-contributing"><h3>المساهمة</h3>
+          <p>المشروع مفتوح المصدر تحت GPL-3.0. يمكنك اقتراح GPU أو مزود سحابي أو دعم عائلة نموذج أو إصلاح حسابات الذاكرة. افتح issue يحتوي على روابط لمواصفات رسمية وطريقة إعادة الإنتاج.</p>
+          <div class="docs-links"><a class="ghost sm" href="https://github.com/PYTHON01100100/PodFit/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">دليل المساهمة الكامل ↗</a><a class="ghost sm" href="https://github.com/PYTHON01100100/PodFit/issues/new" target="_blank" rel="noopener">فتح issue ↗</a></div>
+          <pre>py -3.13 -m venv .venv
+.\.venv\Scripts\python -m pip install -r requirements.txt
+.\.venv\Scripts\python -m uvicorn app.main:app --reload --port 8510</pre>
+        </section>
+        <p class="docs-foot">podfit مرخص تحت GPL-3.0. راجع <code>LICENSE</code> في المستودع.</p>
+      </article>
+    </div>`;
+}
 function renderDocsView() {
+  if (isAr()) { renderDocsArabicView(); return; }
   $('#view-docs').dataset.built = '1';
   $('#view-docs').innerHTML = `
     <div class="view-head"><div><h2>Docs</h2>
